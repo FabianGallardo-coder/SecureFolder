@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SecureFolder.App/SecureFolder.App.csproj" />
+    <Project Path="src/SecureFolder.Core/SecureFolder.Core.csproj" />
+    <Project Path="src/SecureFolder.Tests/SecureFolder.Tests.csproj" />
+  </Folder>
+</Solution>

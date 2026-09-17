@@ -1,0 +1,30 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vs/
+*.swp
+*.log
+
+## Build output
+release/
+publish/
+
+## Installer vendor (downloaded separately)
+installer/vendor/*.msi
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+
+## JetBrains / Rider
+.idea/
+*.sln.iml
