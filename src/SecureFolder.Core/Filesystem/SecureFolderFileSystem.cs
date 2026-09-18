@@ -714,16 +714,12 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
         {
             foreach (string child in _dirs.Keys)
             {
-                if (child.Length > name.Length
-                    && child.StartsWith(name, StringComparison.OrdinalIgnoreCase)
-                    && child[name.Length] == '\\')
+                if (IsChildOf(name, child))
                     return STATUS_DIRECTORY_NOT_EMPTY;
             }
             foreach (string child in _files.Keys)
             {
-                if (child.Length > name.Length
-                    && child.StartsWith(name, StringComparison.OrdinalIgnoreCase)
-                    && child[name.Length] == '\\')
+                if (IsChildOf(name, child))
                     return STATUS_DIRECTORY_NOT_EMPTY;
             }
             return 0;
@@ -764,82 +760,106 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
         out string FileName,
         out Fsp.Interop.FileInfo FileInfo)
     {
-        Context = null;
         FileName = "";
         FileInfo = default;
 
         string dirPath = FileDesc?.ToString() ?? "\\";
         if (string.IsNullOrEmpty(dirPath)) dirPath = "\\";
 
-        bool hasMarker = !string.IsNullOrEmpty(Marker) && Marker != "\0";
-        bool markerPassed = !hasMarker;
+        // winfsp passes the empty marker for a fresh directory-read IRP. A
+        // non-empty marker means the caller is mid-enumeration, so dot entries
+        // (".", "..") must not be served again.
+        bool isFresh = string.IsNullOrEmpty(Marker);
+        if (!isFresh && Marker == "\0") isFresh = true;
+
+        // The per-IRP cursor. Context is reset by the framework between IRPs,
+        // so (re)building the list here keeps the walk monotonic per IRP while
+        // the marker prevents the same name being served twice across IRPs.
+        if (Context is int index)
+        {
+            // Continue the current IRP.
+            if (index < 0 || index >= _enumList.Count)
+            {
+                Context = -1;
+                return false;
+            }
+            var (name, infoNode, infoFile) = _enumList[index];
+            Context = index + 1;
+            FileName = name;
+            FileInfo = infoFile is not null ? CreateFileInfo(infoFile) : CreateDirInfo(infoNode);
+            return true;
+        }
+
+        // Build a fresh, ordered snapshot of this directory for the current IRP.
+        RefreshEnumList(dirPath, isFresh, Marker);
+
+        if (_enumList.Count == 0)
+        {
+            Context = -1;
+            return false;
+        }
+
+        // Global "marker <= name" filter so a stateless resume never re-serves
+        // a name the caller already consumed.
+        if (!isFresh)
+        {
+            int start = 0;
+            while (start < _enumList.Count)
+            {
+                string nm = _enumList[start].Name;
+                if (nm is "." or ".." || string.Compare(nm, Marker, StringComparison.OrdinalIgnoreCase) <= 0)
+                {
+                    start++;
+                    continue;
+                }
+                break;
+            }
+            if (start >= _enumList.Count)
+            {
+                Context = -1;
+                return false;
+            }
+
+            var (firstName, firstNode, firstFile) = _enumList[start];
+            Context = start + 1;
+            FileName = firstName;
+            FileInfo = firstFile is not null ? CreateFileInfo(firstFile) : CreateDirInfo(firstNode);
+            return true;
+        }
+
+        var (firstNz, nzNode, nzFile) = _enumList[0];
+        Context = 1;
+        FileName = firstNz;
+        FileInfo = nzFile is not null ? CreateFileInfo(nzFile) : CreateDirInfo(nzNode);
+        return true;
+    }
+
+    private readonly List<(string Name, string DirPath, MemFile? File)> _enumList = new();
+
+    private void RefreshEnumList(string dirPath, bool isFresh, string marker)
+    {
+        _enumList.Clear();
         bool root = dirPath == "\\";
 
-        if (root)
+        if (isFresh)
         {
-            if (!markerPassed && Marker != "." && Marker != "..")
-            {
-                FileName = ".";
-                FileInfo = CreateDirInfo("\\");
-                return true;
-            }
-            if (!markerPassed) markerPassed = Marker == ".";
-
-            if (!markerPassed && Marker != "..")
-            {
-                FileName = "..";
-                FileInfo = CreateDirInfo("\\");
-                return true;
-            }
-            if (!markerPassed) markerPassed = Marker == "..";
+            _enumList.Add((".", dirPath, null));
+            _enumList.Add(("..", dirPath, null));
         }
 
         foreach (string childPath in _allDirs)
         {
-            if (childPath.Length <= dirPath.Length) continue;
-            if (!childPath.StartsWith(dirPath, StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (childPath[dirPath.Length] != '\\') continue;
-            if (childPath.AsSpan(dirPath.Length + 1).Contains('\\')) continue;
-
-            string childName = childPath[(dirPath.Length + 1)..];
-
-            if (!markerPassed)
-            {
-                if (string.Compare(childName, Marker, StringComparison.OrdinalIgnoreCase) <= 0)
-                    continue;
-                markerPassed = true;
-            }
-
-            FileName = childName;
-            FileInfo = CreateDirInfo(childPath);
-            return true;
+            string? childName = DirectChildName(dirPath, childPath);
+            if (childName is null) continue;
+            _enumList.Add((childName, childPath, null));
         }
 
         foreach (var kvp in _files)
         {
-            string filePath = kvp.Key;
-            if (filePath.Length <= dirPath.Length) continue;
-            if (!filePath.StartsWith(dirPath, StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (filePath[dirPath.Length] != '\\') continue;
-            if (filePath.AsSpan(dirPath.Length + 1).Contains('\\')) continue;
-
-            string childName = filePath[(dirPath.Length + 1)..];
-
-            if (!markerPassed)
-            {
-                if (string.Compare(childName, Marker, StringComparison.OrdinalIgnoreCase) <= 0)
-                    continue;
-                markerPassed = true;
-            }
-
-            FileName = childName;
-            FileInfo = CreateFileInfo(kvp.Value);
-            return true;
+            string? childName = DirectChildName(dirPath, kvp.Key);
+            if (childName is null) continue;
+            _enumList.Add((childName, "", kvp.Value));
         }
-
-        return false;
     }
 
     // ── Security ────────────────────────────────────────────────────────────
@@ -868,6 +888,33 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
         return path.TrimEnd('\\') == "" ? "\\" : path.TrimEnd('\\');
     }
 
+    /// <summary>True if <paramref name="child"/> is inside <paramref name="parent"/>
+    /// (any depth). The root "\\" is the parent of every path.</summary>
+    private static bool IsChildOf(string parent, string child)
+    {
+        if (child.Length <= parent.Length) return false;
+        if (!child.StartsWith(parent, StringComparison.OrdinalIgnoreCase)) return false;
+        return parent.Length == 1 || child[parent.Length] == '\\';
+    }
+
+    /// <summary>
+    /// Returns the direct child name of <paramref name="fullPath"/> under
+    /// <paramref name="dirPath"/>, or null when <paramref name="fullPath"/> is not
+    /// a direct child (root itself, sibling, or a deeper descendant).
+    /// The root directory is a lone separator ("\"), so from the root the child
+    /// name starts at <paramref name="dirPath"/>.Length; deeper dirs bring their
+    /// own trailing separator, so the name starts at Length + 1.
+    /// </summary>
+    internal static string? DirectChildName(string dirPath, string fullPath)
+    {
+        if (!IsChildOf(dirPath, fullPath)) return null;
+        int offset = dirPath.Length + (dirPath == "\\" ? 0 : 1);
+        int rest = fullPath.Length - offset;
+        if (rest <= 0) return null;
+        if (fullPath.AsSpan(offset).Contains('\\')) return null;
+        return fullPath[offset..];
+    }
+
     private void MoveDir(string oldPath, string newPath)
     {
         if (_dirs.TryGetValue(oldPath, out var dir))
@@ -881,8 +928,7 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
         var movedFiles = new List<(string Old, string New)>();
         foreach (string fPath in _files.Keys)
         {
-            if (fPath.StartsWith(oldPath, StringComparison.OrdinalIgnoreCase)
-                && (fPath.Length == oldPath.Length || fPath[oldPath.Length] == '\\'))
+            if (fPath == oldPath || IsChildOf(oldPath, fPath))
             {
                 string newFilePath = newPath + fPath[oldPath.Length..];
                 movedFiles.Add((fPath, newFilePath));
@@ -901,8 +947,7 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
         var movedDirs = new List<(string Old, string New)>();
         foreach (string dPath in _dirs.Keys)
         {
-            if (dPath.StartsWith(oldPath, StringComparison.OrdinalIgnoreCase)
-                && (dPath.Length == oldPath.Length || dPath[oldPath.Length] == '\\'))
+            if (dPath == oldPath || IsChildOf(oldPath, dPath))
             {
                 string newDirPath = newPath + dPath[oldPath.Length..];
                 movedDirs.Add((dPath, newDirPath));

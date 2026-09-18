@@ -31,14 +31,15 @@ public sealed class CountToVisibleConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is System.Collections.ICollection collection)
+        bool nonZero = value switch
         {
-            bool nonZero = collection.Count > 0;
-            if (parameter?.ToString() == "Inverted")
-                nonZero = !nonZero;
-            return nonZero ? Visibility.Visible : Visibility.Collapsed;
-        }
-        return Visibility.Collapsed;
+            System.Collections.ICollection collection => collection.Count > 0,
+            int count => count > 0,
+            _ => false,
+        };
+        if (parameter?.ToString() == "Inverted")
+            nonZero = !nonZero;
+        return nonZero ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

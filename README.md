@@ -51,6 +51,12 @@ dotnet test
 
 > ⚠ Si olvidás la contraseña, los datos cifrados pueden ser irrecuperables.
 
+### Limitaciones conocidas
+
+- **Las carpetas vacías no se conservan**: el índice del vault solo guarda archivos. Si creás una
+  carpeta y la dejás vacía, al bloquear/desbloquear la carpeta desaparece (persisten los archivos y
+  las carpetas que contengan archivos).
+
 ## Arquitectura
 
 ```
