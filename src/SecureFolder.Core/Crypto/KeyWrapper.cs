@@ -126,7 +126,7 @@ public static class KeyWrapper
         }
 
         if (!CryptographicOperations.FixedTimeEquals(a, DefaultIv))
-            throw new CryptographicException("Invalid KEK or corrupted wrapped key.");
+            throw new CryptographicException("KEK no válida o clave envuelta corrupta.");
 
         return r;
     }

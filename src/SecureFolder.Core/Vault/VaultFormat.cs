@@ -130,7 +130,7 @@ byte[] emptyIndex = Encoding.UTF8.GetBytes("{}");
         await using var fs = new FileStream(vaultFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
 
         if (fs.Length < HeaderSize)
-            throw new InvalidOperationException("Vault file is too small or corrupted.");
+            throw new InvalidOperationException("El archivo de la carpeta segura es demasiado pequeño o está dañado.");
 
         // Read header
         byte[] header = new byte[HeaderSize];
@@ -139,12 +139,12 @@ byte[] emptyIndex = Encoding.UTF8.GetBytes("{}");
         // Verify magic
         string magic = Encoding.ASCII.GetString(header, 0, MagicSize);
         if (magic != Magic)
-            throw new InvalidOperationException("Invalid vault file format.");
+            throw new InvalidOperationException("Formato de archivo de carpeta segura no válido.");
 
         // Read version
         ushort version = BitConverter.ToUInt16(header, MagicSize);
         if (version > CurrentVersion)
-            throw new InvalidOperationException($"Unsupported vault version: {version}");
+            throw new InvalidOperationException($"Versión de carpeta segura no compatible: {version}");
 
         // Read salt
         byte[] salt = header.AsSpan(MagicSize + VersionSize, SaltSize).ToArray();
@@ -173,7 +173,7 @@ byte[] emptyIndex = Encoding.UTF8.GetBytes("{}");
         if (!CryptographicOperations.FixedTimeEquals(computedHmac, storedHmac))
         {
             CryptographicOperations.ZeroMemory(kek);
-            throw new InvalidOperationException("Incorrect password.");
+            throw new InvalidOperationException("Contraseña incorrecta.");
         }
 
         // Unwrap DEK
@@ -185,7 +185,7 @@ byte[] emptyIndex = Encoding.UTF8.GetBytes("{}");
         catch (Exception)
         {
             CryptographicOperations.ZeroMemory(kek);
-            throw new InvalidOperationException("Incorrect password.");
+            throw new InvalidOperationException("Contraseña incorrecta.");
         }
 
         // Verify DEK with verification blob
@@ -201,13 +201,13 @@ byte[] emptyIndex = Encoding.UTF8.GetBytes("{}");
 
             string verificationText = Encoding.UTF8.GetString(vPlaintext);
             if (verificationText != VerificationPlaintext)
-                throw new InvalidOperationException("Verification failed.");
+                throw new InvalidOperationException("La verificación falló.");
         }
         catch (CryptographicException)
         {
             CryptographicOperations.ZeroMemory(kek);
             CryptographicOperations.ZeroMemory(dek);
-            throw new InvalidOperationException("Incorrect password.");
+            throw new InvalidOperationException("Contraseña incorrecta.");
         }
 
         // Read encrypted file index

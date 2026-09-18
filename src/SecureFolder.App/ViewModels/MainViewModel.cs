@@ -101,29 +101,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (string.IsNullOrWhiteSpace(CreateVaultName))
         {
-            StatusMessage = "Please enter a name.";
+            StatusMessage = "Introduce un nombre.";
             return;
         }
 
         if (string.IsNullOrWhiteSpace(CreateVaultPassword))
         {
-            StatusMessage = "Please enter a password.";
+            StatusMessage = "Introduce una contraseña.";
             return;
         }
 
         if (CreateVaultPassword != CreateVaultPasswordConfirm)
         {
-            StatusMessage = "Passwords do not match.";
+            StatusMessage = "Las contraseñas no coinciden.";
             return;
         }
 
         if (CreateVaultPassword.Length < 8)
         {
-            StatusMessage = "Password must be at least 8 characters.";
+            StatusMessage = "La contraseña debe tener al menos 8 caracteres.";
             return;
         }
 
-        StatusMessage = "Creating vault...";
+        StatusMessage = "Creando carpeta segura...";
 
         var result = await _vaultManager.CreateVaultAsync(
             CreateVaultName,
@@ -134,11 +134,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             IsCreateDialogOpen = false;
             RefreshVaultList();
-            StatusMessage = $"Vault '{CreateVaultName}' created successfully.";
+            StatusMessage = $"Carpeta segura '{CreateVaultName}' creada correctamente.";
         }
         else
         {
-            StatusMessage = result.Error ?? "Failed to create vault.";
+            StatusMessage = result.Error ?? "No se pudo crear la carpeta segura.";
         }
     }
 
@@ -162,11 +162,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (SelectedVault is null || string.IsNullOrWhiteSpace(UnlockPassword))
         {
-            StatusMessage = "Please enter the password.";
+            StatusMessage = "Introduce la contraseña.";
             return;
         }
 
-        StatusMessage = "Unlocking vault...";
+        StatusMessage = "Desbloqueando carpeta segura...";
 
         var result = await _vaultManager.UnlockVaultAsync(SelectedVault.Id, UnlockPassword);
 
@@ -174,29 +174,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             IsUnlockDialogOpen = false;
             RefreshVaultList();
-            StatusMessage = $"Vault '{SelectedVault.Name}' unlocked. Drive {SelectedVault.DriveLetter}:\\ is now available.";
+            StatusMessage = $"Carpeta segura '{SelectedVault.Name}' desbloqueada. La unidad {SelectedVault.DriveLetter}:\\ ya está disponible.";
         }
         else
         {
-            StatusMessage = result.Error ?? "Incorrect password.";
+            StatusMessage = result.Error ?? "Contraseña incorrecta.";
         }
     }
 
     [RelayCommand]
     private async Task LockVaultAsync(VaultInfo vault)
     {
-        StatusMessage = "Locking vault...";
+        StatusMessage = "Bloqueando carpeta segura...";
 
         var result = await _vaultManager.LockVaultAsync(vault.Id);
 
         if (result.IsSuccess)
         {
             RefreshVaultList();
-            StatusMessage = $"Vault '{vault.Name}' locked.";
+            StatusMessage = $"Carpeta segura '{vault.Name}' bloqueada.";
         }
         else
         {
-            StatusMessage = result.Error ?? "Failed to lock vault.";
+            StatusMessage = result.Error ?? "No se pudo bloquear la carpeta segura.";
         }
     }
 
@@ -239,23 +239,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (string.IsNullOrWhiteSpace(ChangePasswordCurrent) ||
             string.IsNullOrWhiteSpace(ChangePasswordNew))
         {
-            StatusMessage = "Please fill in all fields.";
+            StatusMessage = "Rellena todos los campos.";
             return;
         }
 
         if (ChangePasswordNew != ChangePasswordConfirm)
         {
-            StatusMessage = "New passwords do not match.";
+            StatusMessage = "Las contraseñas nuevas no coinciden.";
             return;
         }
 
         if (ChangePasswordNew.Length < 8)
         {
-            StatusMessage = "New password must be at least 8 characters.";
+            StatusMessage = "La contraseña nueva debe tener al menos 8 caracteres.";
             return;
         }
 
-        StatusMessage = "Changing password...";
+        StatusMessage = "Cambiando contraseña...";
 
         var result = await _vaultManager.ChangePasswordAsync(
             SelectedVault.Id,
@@ -265,11 +265,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (result.IsSuccess)
         {
             IsChangePasswordDialogOpen = false;
-            StatusMessage = "Password changed successfully.";
+            StatusMessage = "Contraseña cambiada correctamente.";
         }
         else
         {
-            StatusMessage = result.Error ?? "Failed to change password.";
+            StatusMessage = result.Error ?? "No se pudo cambiar la contraseña.";
         }
     }
 
@@ -280,11 +280,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (result.IsSuccess)
         {
             RefreshVaultList();
-            StatusMessage = $"Vault '{vault.Name}' removed.";
+            StatusMessage = $"Carpeta segura '{vault.Name}' eliminada.";
         }
         else
         {
-            StatusMessage = result.Error ?? "Failed to remove vault.";
+            StatusMessage = result.Error ?? "No se pudo eliminar la carpeta segura.";
         }
     }
 
@@ -298,7 +298,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (result.IsSuccess) locked++;
         }
         RefreshVaultList();
-        StatusMessage = $"Locked {locked} vault(s).";
+        StatusMessage = $"Se bloquearon {locked} carpeta(s) segura(s).";
     }
 
     private void RefreshVaultList()
@@ -317,7 +317,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 {
                     await _vaultManager.LockVaultAsync(vault.Id);
                     RefreshVaultList();
-                    StatusMessage = $"Vault '{vault.Name}' auto-locked due to inactivity.";
+                    StatusMessage = $"Carpeta segura '{vault.Name}' bloqueada automáticamente por inactividad.";
                 }
             }
         }

@@ -100,13 +100,13 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
             _host?.Unmount();
             _dispatchThread?.Join(2000);
             throw new TimeoutException(
-                "WinFsp mount timed out. Ensure WinFsp is installed: https://winfsp.dev/rel/");
+                "Se agotó el tiempo de montaje de WinFsp. Asegúrate de que WinFsp está instalado: https://winfsp.dev/rel/");
         }
 
         int error = Volatile.Read(ref _mountError);
         if (error != 0)
             throw new InvalidOperationException(
-                $"WinFsp mount failed (status=0x{error:X8}). Ensure WinFsp is installed.");
+                $"Falló el montaje de WinFsp (estado=0x{error:X8}). Asegúrate de que WinFsp está instalado.");
     }
 
     /// <summary>Called by WinFsp after a successful mount.</summary>

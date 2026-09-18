@@ -43,7 +43,7 @@ public sealed class VaultManager : IDisposable
             string vaultFilePath = Path.Combine(storagePath, vaultFileName);
 
             if (File.Exists(vaultFilePath))
-                return Result<VaultInfo>.Fail("A vault file already exists at this location.");
+                return Result<VaultInfo>.Fail("Ya existe un archivo de carpeta segura en esta ubicación.");
 
             // Ensure directory exists
             Directory.CreateDirectory(storagePath);
@@ -65,7 +65,7 @@ public sealed class VaultManager : IDisposable
         }
         catch (Exception ex)
         {
-            return Result<VaultInfo>.Fail($"Failed to create vault: {ex.Message}");
+            return Result<VaultInfo>.Fail($"No se pudo crear la carpeta segura: {ex.Message}");
         }
     }
 
@@ -81,13 +81,13 @@ public sealed class VaultManager : IDisposable
         {
             var info = _vaults.FirstOrDefault(v => v.Id == vaultId);
             if (info is null)
-                return Result<MountedVault>.Fail("Vault not found.");
+                return Result<MountedVault>.Fail("Carpeta segura no encontrada.");
 
             if (info.IsUnlocked)
-                return Result<MountedVault>.Fail("Vault is already unlocked.");
+                return Result<MountedVault>.Fail("La carpeta segura ya está desbloqueada.");
 
             if (!File.Exists(info.VaultFilePath))
-                return Result<MountedVault>.Fail("Vault file not found on disk.");
+                return Result<MountedVault>.Fail("No se encontró el archivo de la carpeta segura en el disco.");
 
             // Open and verify the vault
             var openResult = await VaultFormat.OpenVaultAsync(info.VaultFilePath, password, ct);
@@ -154,7 +154,7 @@ public sealed class VaultManager : IDisposable
         }
         catch (Exception ex)
         {
-            return Result<MountedVault>.Fail($"Failed to unlock vault: {ex.Message}");
+            return Result<MountedVault>.Fail($"No se pudo desbloquear la carpeta segura: {ex.Message}");
         }
     }
 
@@ -168,14 +168,14 @@ public sealed class VaultManager : IDisposable
         try
         {
             if (!_mountedVaults.TryGetValue(vaultId, out var mounted))
-                return Result.Fail("Vault is not unlocked.");
+                return Result.Fail("La carpeta segura no está desbloqueada.");
 
             // Check for open files via the FS handle tracker
             var openFiles = mounted.FileSystem?.GetOpenFiles() ?? [];
             if (openFiles.Count > 0)
             {
                 string fileList = string.Join("\n", openFiles.Take(10));
-                return Result.Fail($"The following files are still open:\n{fileList}\n\nClose them before locking.");
+                return Result.Fail($"Los siguientes archivos siguen abiertos:\n{fileList}\n\nCiérralos antes de bloquear.");
             }
 
             // Unmount virtual filesystem (flushes dirty files + rewrites vault)
@@ -193,7 +193,7 @@ public sealed class VaultManager : IDisposable
         }
         catch (Exception ex)
         {
-            return Result.Fail($"Failed to lock vault: {ex.Message}");
+            return Result.Fail($"No se pudo bloquear la carpeta segura: {ex.Message}");
         }
     }
 
@@ -210,10 +210,10 @@ public sealed class VaultManager : IDisposable
         {
             var info = _vaults.FirstOrDefault(v => v.Id == vaultId);
             if (info is null)
-                return Result.Fail("Vault not found.");
+                return Result.Fail("Carpeta segura no encontrada.");
 
             if (info.IsUnlocked)
-                return Result.Fail("Cannot change password while vault is unlocked. Lock it first.");
+                return Result.Fail("No se puede cambiar la contraseña con la carpeta desbloqueada. Bloquéala primero.");
 
             await VaultFormat.ChangePasswordAsync(info.VaultFilePath, currentPassword, newPassword, ct);
             return Result.Ok();
@@ -224,7 +224,7 @@ public sealed class VaultManager : IDisposable
         }
         catch (Exception ex)
         {
-            return Result.Fail($"Failed to change password: {ex.Message}");
+            return Result.Fail($"No se pudo cambiar la contraseña: {ex.Message}");
         }
     }
 
@@ -234,11 +234,11 @@ public sealed class VaultManager : IDisposable
     public Result RemoveVault(string vaultId)
     {
         if (_mountedVaults.ContainsKey(vaultId))
-            return Result.Fail("Cannot remove a mounted vault. Lock it first.");
+            return Result.Fail("No se puede eliminar una carpeta montada. Bloquéala primero.");
 
         var info = _vaults.FirstOrDefault(v => v.Id == vaultId);
         if (info is null)
-            return Result.Fail("Vault not found.");
+            return Result.Fail("Carpeta segura no encontrada.");
 
         _vaults.Remove(info);
         SaveVaultList();
@@ -316,7 +316,7 @@ public sealed class VaultManager : IDisposable
             if (!drives.Contains(c))
                 return c;
         }
-        throw new InvalidOperationException("No available drive letters.");
+        throw new InvalidOperationException("No hay letras de unidad disponibles.");
     }
 
     private static string SanitizeFileName(string name)
