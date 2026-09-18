@@ -1,10 +1,20 @@
+using System.ComponentModel;
+
 namespace SecureFolder.Core.Models;
 
 /// <summary>
 /// Represents a vault's metadata and configuration.
 /// </summary>
-public sealed class VaultInfo
+public sealed class VaultInfo : INotifyPropertyChanged
 {
+    private bool _isUnlocked;
+    private char? _driveLetter;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void Raise(string name) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
     /// <summary>Unique identifier for this vault.</summary>
     public required string Id { get; init; }
 
@@ -15,10 +25,31 @@ public sealed class VaultInfo
     public required string VaultFilePath { get; init; }
 
     /// <summary>Whether the vault is currently unlocked (mounted).</summary>
-    public bool IsUnlocked { get; set; }
+    public bool IsUnlocked
+    {
+        get => _isUnlocked;
+        set
+        {
+            if (_isUnlocked == value) return;
+            _isUnlocked = value;
+            Raise(nameof(IsUnlocked));
+            Raise(nameof(StatusText));
+            Raise(nameof(IconEmoji));
+        }
+    }
 
     /// <summary>Drive letter assigned when unlocked (e.g., 'X').</summary>
-    public char? DriveLetter { get; set; }
+    public char? DriveLetter
+    {
+        get => _driveLetter;
+        set
+        {
+            if (_driveLetter == value) return;
+            _driveLetter = value;
+            Raise(nameof(DriveLetter));
+            Raise(nameof(StatusText));
+        }
+    }
 
     /// <summary>Timestamp of last unlock.</summary>
     public DateTimeOffset? LastUnlockedAt { get; set; }
