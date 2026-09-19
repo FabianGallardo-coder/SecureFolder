@@ -29,7 +29,8 @@ namespace SecureFolder.Core.Vault;
 public static class VaultFormat
 {
     public const string Magic = "SFVL";
-    public const ushort CurrentVersion = 1;
+    public const ushort CurrentVersion = 2;
+
 
     // Header field sizes
     public const int MagicSize = 4;

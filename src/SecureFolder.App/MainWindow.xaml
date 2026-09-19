@@ -150,28 +150,52 @@
                                                    Margin="0,2,0,0"/>
                                     </StackPanel>
 
-                                    <!-- Action Button -->
-                                    <Button Grid.Column="2"
-                                            Style="{StaticResource PrimaryButton}"
-                                            Padding="12,6"
-                                            FontSize="12"
-                                            Click="VaultActionButton_Click"
-                                            Tag="{Binding}">
-                                        <Button.Content>
-                                            <TextBlock>
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Text" Value="Desbloquear"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
-                                                                <Setter Property="Text" Value="Bloquear"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </Button.Content>
-                                    </Button>
+                                    <!-- Vault Info -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="16" FontWeight="SemiBold"
+                                                   Foreground="White"/>
+                                        <TextBlock Text="{Binding StatusText}"
+                                                   FontSize="12" Foreground="#888"
+                                                   Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding VaultFilePath}"
+                                                   FontSize="10" Foreground="#555"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- Actions -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Style="{StaticResource PrimaryButton}"
+                                                Padding="12,6"
+                                                FontSize="12"
+                                                Click="VaultActionButton_Click"
+                                                Tag="{Binding}">
+                                            <Button.Content>
+                                                <TextBlock>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="Desbloquear"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
+                                                                    <Setter Property="Text" Value="Bloquear"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button.Content>
+                                        </Button>
+
+                                        <Button Style="{StaticResource SecondaryButton}"
+                                                Padding="8,6"
+                                                FontSize="12"
+                                                Content="⚙"
+                                                ToolTip="Opciones"
+                                                Click="VaultOptionsButton_Click"
+                                                Tag="{Binding}"
+                                                Margin="8,0,0,0"/>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -287,39 +311,65 @@
             </Border>
         </Border>
 
-        <!-- Change Password Dialog Overlay -->
+        <!-- Rename Dialog Overlay -->
         <Border Style="{StaticResource OverlayBorder}"
-                Visibility="{Binding IsChangePasswordDialogOpen, Converter={StaticResource BoolToVisibleConverter}}"
+                Visibility="{Binding IsRenameDialogOpen, Converter={StaticResource BoolToVisibleConverter}}"
                 MouseLeftButtonDown="Overlay_Click">
             <Border Background="#1a1a2e" CornerRadius="12"
                     Width="380" Padding="24"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel>
-                    <TextBlock Text="Cambiar contraseña"
+                    <TextBlock Text="Renombrar carpeta segura"
                                FontSize="20" FontWeight="Bold"
                                Foreground="#e94560" Margin="0,0,0,16"/>
 
-                    <TextBlock Text="Contraseña actual" Foreground="#888" Margin="0,0,0,4"/>
-                    <PasswordBox x:Name="CurrentPasswordBox"
-                                 Style="{StaticResource PasswordBox}"
-                                 PasswordChanged="CurrentPassword_Changed"/>
-
-                    <TextBlock Text="Nueva contraseña" Foreground="#888" Margin="0,12,0,4"/>
-                    <PasswordBox x:Name="NewPasswordBox"
-                                 Style="{StaticResource PasswordBox}"
-                                 PasswordChanged="NewPassword_Changed"/>
-
-                    <TextBlock Text="Confirmar nueva contraseña" Foreground="#888" Margin="0,12,0,4"/>
-                    <PasswordBox x:Name="NewPasswordConfirmBox"
-                                 Style="{StaticResource PasswordBox}"
-                                 PasswordChanged="NewPasswordConfirm_Changed"/>
+                    <TextBlock Text="Nuevo nombre" Foreground="#888" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding RenameVaultName, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource TextBox}"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                         <Button Style="{StaticResource PrimaryButton}"
-                                Command="{Binding ChangePasswordCommand}"
-                                Content="Cambiar"/>
+                                Command="{Binding RenameVaultCommand}"
+                                Content="Renombrar"/>
                         <Button Style="{StaticResource SecondaryButton}"
-                                Command="{Binding CancelChangePasswordCommand}"
+                                Command="{Binding CancelRenameCommand}"
+                                Content="Cancelar" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Delete Confirmation Dialog Overlay -->
+        <Border Style="{StaticResource OverlayBorder}"
+                Visibility="{Binding IsDeleteConfirmationDialogOpen, Converter={StaticResource BoolToVisibleConverter}}"
+                MouseLeftButtonDown="Overlay_Click">
+            <Border Background="#1a1a2e" CornerRadius="12"
+                    Width="380" Padding="24"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Eliminar carpeta segura"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="#e94560" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="¿Estás seguro de que deseas eliminar esta carpeta?"
+                               Foreground="White" Margin="0,0,0,12"
+                               TextWrapping="Wrap"/>
+
+                    <CheckBox Content="Eliminar archivo físico del disco"
+                              IsChecked="{Binding DeletePhysicalFile}"
+                              Foreground="White" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="⚠ Esta acción no se puede deshacer."
+                               FontSize="11" Foreground="#e94560"
+                               TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource PrimaryButton}"
+                                Command="{Binding RemoveVaultCommand}"
+                                Content="Eliminar"
+                                Background="#8b0000"/>
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Command="{Binding CancelDeleteCommand}"
                                 Content="Cancelar" Margin="8,0,0,0"/>
                     </StackPanel>
                 </StackPanel>

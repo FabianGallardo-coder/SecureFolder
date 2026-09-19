@@ -13,14 +13,16 @@ SecureFolder.App          UI WPF + tray icon (net10.0-windows)
 │
 SecureFolder.Core          Criptografía + filesystem virtual (net10.0-windows)
 │   ├─ Crypto/                AesGcmEngine, Argon2Kdf, KeyWrapper (RFC 3394), SecureRandom
+│   │   └─ Chunking:          Lógica de cifrado fragmentado (64KB) para soporte de archivos grandes.
 │   ├─ Filesystem/            SecureFolderFileSystem (WinFsp FileSystemBase)
+│   │   └─ Lazy Loading:       Lectura offset-based para evitar consumo masivo de RAM.
 │   ├─ Vault/                 VaultFormat (.sfv), VaultManager, HmacHelper
 │   └─ Models/                VaultInfo, FileEntry, Result
 │
-SecureFolder.Tests         xUnit + FluentAssertions (32+ casos, incl. regresión de enumeración)
+SecureFolder.Tests         xUnit + FluentAssertions (45+ casos, incl. regresión de enumeración y 0-byte files)
 ```
 
-No hay `.sln`; se compila el proyecto de App directamente (ver `AGENTS.md`).
+No hay `.sln`; se compila el proyecto de App directamente.
 
 ## Flujo de cifrado
 

@@ -28,3 +28,11 @@ packages/
 ## JetBrains / Rider
 .idea/
 *.sln.iml
+
+## Claude / AI Tools
+.claude/
+.cursor/
+.agent/
+*.claudememory
+CLAUDE.md
+MEMORY.md

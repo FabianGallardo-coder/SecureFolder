@@ -111,6 +111,52 @@ public sealed class AesGcmEngine : IDisposable
         return plaintext;
     }
 
+    /// <summary>
+    /// Encrypts a small chunk of data.
+    /// Format: [Nonce(12B)] [Ciphertext(N)] [Tag(16B)]
+    /// </summary>
+    public byte[] EncryptChunk(ReadOnlySpan<byte> plaintext)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        byte[] nonce = SecureRandom.GenerateNonce();
+        byte[] ciphertext = new byte[plaintext.Length];
+        byte[] tag = new byte[TagSize];
+
+        using var aes = new AesGcm(_key, TagSize);
+        aes.Encrypt(nonce, plaintext, ciphertext, tag, null);
+
+        byte[] result = new byte[NonceSize + ciphertext.Length + TagSize];
+        nonce.CopyTo(result, 0);
+        ciphertext.CopyTo(result, NonceSize);
+        tag.CopyTo(result, NonceSize + ciphertext.Length);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Decrypts a single encrypted chunk.
+    /// Expects: [Nonce(12B)] [Ciphertext(N)] [Tag(16B)]
+    /// </summary>
+    public byte[] DecryptChunk(ReadOnlySpan<byte> encryptedChunk)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (encryptedChunk.Length < NonceSize + TagSize)
+            throw new CryptographicException("El fragmento cifrado es demasiado corto.");
+
+        ReadOnlySpan<byte> nonce = encryptedChunk.Slice(0, NonceSize);
+        ReadOnlySpan<byte> tag = encryptedChunk.Slice(encryptedChunk.Length - TagSize);
+        ReadOnlySpan<byte> ciphertext = encryptedChunk.Slice(NonceSize, encryptedChunk.Length - NonceSize - TagSize);
+
+        byte[] plaintext = new byte[ciphertext.Length];
+
+        using var aes = new AesGcm(_key, TagSize);
+        aes.Decrypt(nonce, ciphertext, tag, plaintext, null);
+
+        return plaintext;
+    }
+
     public void Dispose()
     {
         if (!_disposed)

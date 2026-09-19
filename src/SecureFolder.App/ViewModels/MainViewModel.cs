@@ -34,6 +34,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isChangePasswordDialogOpen;
 
     [ObservableProperty]
+    private bool _isDeleteConfirmationDialogOpen;
+
+    [ObservableProperty]
+    private bool _isRenameDialogOpen;
+
+    [ObservableProperty]
+    private string _renameVaultName = "";
+
+    [ObservableProperty]
+    private bool _deletePhysicalFile = false;
+
+    [ObservableProperty]
     private string _statusMessage = "";
 
     [ObservableProperty]
@@ -274,13 +286,78 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void RemoveVault(VaultInfo vault)
+    private void ShowRenameDialog(VaultInfo vault)
     {
-        var result = _vaultManager.RemoveVault(vault.Id);
+        SelectedVault = vault;
+        RenameVaultName = vault.Name;
+        IsRenameDialogOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelRename()
+    {
+        IsRenameDialogOpen = false;
+        SelectedVault = null;
+    }
+
+    [RelayCommand]
+    private async Task RenameVaultAsync()
+    {
+        if (SelectedVault is null || string.IsNullOrWhiteSpace(RenameVaultName))
+        {
+            StatusMessage = "Introduce un nombre válido.";
+            return;
+        }
+
+        if (RenameVaultName == SelectedVault.Name)
+        {
+            IsRenameDialogOpen = false;
+            return;
+        }
+
+        StatusMessage = "Renombrando carpeta segura...";
+
+        var result = await _vaultManager.RenameVaultAsync(SelectedVault.Id, RenameVaultName);
+
         if (result.IsSuccess)
         {
+            IsRenameDialogOpen = false;
             RefreshVaultList();
-            StatusMessage = $"Carpeta segura '{vault.Name}' eliminada.";
+            StatusMessage = $"Carpeta segura renombrada a '{RenameVaultName}' correctamente.";
+        }
+        else
+        {
+            StatusMessage = result.Error ?? "No se pudo renombrar la carpeta segura.";
+        }
+    }
+
+    [RelayCommand]
+    private void ShowDeleteConfirmation(VaultInfo vault)
+    {
+        SelectedVault = vault;
+        DeletePhysicalFile = false;
+        IsDeleteConfirmationDialogOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelDelete()
+    {
+        IsDeleteConfirmationDialogOpen = false;
+        SelectedVault = null;
+    }
+
+    [RelayCommand]
+    private void RemoveVault(VaultInfo vault)
+    {
+        var result = _vaultManager.RemoveVault(vault.Id, DeletePhysicalFile);
+        if (result.IsSuccess)
+        {
+            IsDeleteConfirmationDialogOpen = false;
+            RefreshVaultList();
+            string msg = DeletePhysicalFile
+                ? $"Carpeta segura '{vault.Name}' eliminada definitivamente del disco."
+                : $"Carpeta segura '{vault.Name}' eliminada de la lista.";
+            StatusMessage = msg;
         }
         else
         {

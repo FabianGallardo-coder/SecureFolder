@@ -113,6 +113,9 @@ public sealed class VaultManager : IDisposable
             char driveLetter = FindAvailableDriveLetter();
             string mountPoint = $"{driveLetter}:\\";
 
+            // Create mount provider (WinFsp implementation)
+            var mountProvider = new WinFspMountProvider();
+
             // Create mounted vault
             var mounted = new MountedVault
             {
@@ -123,22 +126,23 @@ public sealed class VaultManager : IDisposable
             };
 
             // Create virtual filesystem (in-memory state + vault loading)
-            var fs = new SecureFolderFileSystem(mounted, openResult.DataStartOffset);
+            var fs = new SecureFolderFileSystem(mounted, openResult.DataStartOffset, mountProvider);
             mounted.FileSystem = fs;
 
-            // Mount (synchronous — runs WinFsp dispatcher on a background thread)
-            fs.Mount(driveLetter);
-
-            // Verify mount succeeded
-            int mountError = fs.LastMountError;
-            if (mountError != 0)
+            // Mount using the provider
+            var mountResult = mountProvider.Mount(driveLetter, fs);
+            if (!mountResult.IsSuccess)
             {
                 fs.Dispose();
                 engine.Dispose();
-                return Result<MountedVault>.Fail(
-                    $"No se pudo montar la unidad (error 0x{mountError:X8}). " +
-                    "Asegúrese de que WinFsp está instalado: https://winfsp.dev/rel/");
+                return Result<MountedVault>.Fail(mountResult.Error ?? "Error desconocido al montar.");
             }
+
+            mounted.Info.IsUnlocked = true;
+            mounted.Info.DriveLetter = driveLetter;
+            mounted.Info.LastUnlockedAt = DateTimeOffset.UtcNow;
+            _mountedVaults[info.Id] = mounted;
+
 
             mounted.Info.IsUnlocked = true;
             mounted.Info.DriveLetter = driveLetter;
@@ -165,19 +169,19 @@ public sealed class VaultManager : IDisposable
         string vaultId,
         CancellationToken ct = default)
     {
+        if (!_mountedVaults.TryGetValue(vaultId, out var mounted))
+            return Result.Fail("La carpeta segura no está desbloqueada.");
+
+        // Check for open files via the FS handle tracker
+        var openFiles = mounted.FileSystem?.GetOpenFiles() ?? [];
+        if (openFiles.Count > 0)
+        {
+            string fileList = string.Join("\n", openFiles.Take(10));
+            return Result.Fail($"Los siguientes archivos siguen abiertos:\n{fileList}\n\nCiérralos antes de bloquear.");
+        }
+
         try
         {
-            if (!_mountedVaults.TryGetValue(vaultId, out var mounted))
-                return Result.Fail("La carpeta segura no está desbloqueada.");
-
-            // Check for open files via the FS handle tracker
-            var openFiles = mounted.FileSystem?.GetOpenFiles() ?? [];
-            if (openFiles.Count > 0)
-            {
-                string fileList = string.Join("\n", openFiles.Take(10));
-                return Result.Fail($"Los siguientes archivos siguen abiertos:\n{fileList}\n\nCiérralos antes de bloquear.");
-            }
-
             // Unmount virtual filesystem (flushes dirty files + rewrites vault)
             mounted.Unmount();
 
@@ -229,9 +233,10 @@ public sealed class VaultManager : IDisposable
     }
 
     /// <summary>
-    /// Removes a vault from the list (does not delete the file).
+    /// Removes a vault.
+    /// If deleteFile is true, the .sfv file is also deleted from the disk.
     /// </summary>
-    public Result RemoveVault(string vaultId)
+    public Result RemoveVault(string vaultId, bool deleteFile = false)
     {
         if (_mountedVaults.ContainsKey(vaultId))
             return Result.Fail("No se puede eliminar una carpeta montada. Bloquéala primero.");
@@ -240,9 +245,70 @@ public sealed class VaultManager : IDisposable
         if (info is null)
             return Result.Fail("Carpeta segura no encontrada.");
 
-        _vaults.Remove(info);
-        SaveVaultList();
-        return Result.Ok();
+        try
+        {
+            if (deleteFile && File.Exists(info.VaultFilePath))
+            {
+                File.Delete(info.VaultFilePath);
+            }
+
+            _vaults.Remove(info);
+            SaveVaultList();
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"No se pudo eliminar la carpeta segura: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Renames a vault's physical file and updates the configuration.
+    /// </summary>
+    public async Task<Result> RenameVaultAsync(
+        string vaultId,
+        string newName,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var info = _vaults.FirstOrDefault(v => v.Id == vaultId);
+            if (info is null)
+                return Result.Fail("Carpeta segura no encontrada.");
+
+            if (info.IsUnlocked)
+                return Result.Fail("No se puede renombrar una carpeta desbloqueada. Bloquéala primero.");
+
+            string directory = Path.GetDirectoryName(info.VaultFilePath) ?? "";
+            string newFileName = $"{SanitizeFileName(newName)}.sfv";
+            string newFilePath = Path.Combine(directory, newFileName);
+
+            if (File.Exists(newFilePath))
+                return Result.Fail("Ya existe una carpeta segura con ese nombre en la ubicación.");
+
+            // Rename physical file
+            File.Move(info.VaultFilePath, newFilePath);
+
+            // Update info (since VaultInfo properties are init-only for path)
+            var oldIndex = _vaults.IndexOf(info);
+            var updatedInfo = new VaultInfo
+            {
+                Id = info.Id,
+                Name = newName,
+                VaultFilePath = newFilePath,
+                AutoLockTimeoutMinutes = info.AutoLockTimeoutMinutes,
+                AutoLockOnShutdown = info.AutoLockOnShutdown
+            };
+
+            _vaults[oldIndex] = updatedInfo;
+            SaveVaultList();
+
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"No se pudo renombrar la carpeta segura: {ex.Message}");
+        }
     }
 
     /// <summary>

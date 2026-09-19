@@ -87,4 +87,19 @@ public partial class MainWindow : Window
     {
         if (sender is PasswordBox pb) ViewModel.ChangePasswordConfirm = pb.Password;
     }
+
+    private void VaultOptionsButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.DataContext is VaultInfo vault)
+        {
+            if (vault.IsUnlocked)
+            {
+                ViewModel.ShowChangePasswordDialogCommand.Execute(vault);
+            }
+            else
+            {
+                ViewModel.ShowRenameDialogCommand.Execute(vault);
+            }
+        }
+    }
 }
