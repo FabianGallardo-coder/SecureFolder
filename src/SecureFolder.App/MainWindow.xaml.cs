@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.ComponentModel;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using SecureFolder.App.ViewModels;
@@ -15,6 +16,26 @@ public partial class MainWindow : Window
         InitializeComponent();
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
+        if (DataContext is MainViewModel vm)
+            vm.PropertyChanged += ViewModel_PropertyChanged;
+    }
+
+    // Los PasswordBox no se pueden enlazar en MVVM y no se limpian solos al
+    // cerrar/reabrir un diálogo. Hay que vaciarlos cuando el diálogo se abre,
+    // de lo contrario conservan la contraseña anterior (y al reescribir se
+    // concatena, produciendo "contraseña incorrecta").
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(MainViewModel.IsCreateDialogOpen) when ViewModel.IsCreateDialogOpen:
+                CreatePasswordBox.Clear();
+                CreatePasswordConfirmBox.Clear();
+                break;
+            case nameof(MainViewModel.IsUnlockDialogOpen) when ViewModel.IsUnlockDialogOpen:
+                UnlockPasswordBox.Clear();
+                break;
+        }
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
