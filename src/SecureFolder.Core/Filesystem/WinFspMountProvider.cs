@@ -15,13 +15,26 @@ public sealed class WinFspMountProvider : IMountProvider, IDisposable
     private int _lastError;
     private readonly ManualResetEventSlim _mountReady = new(false);
     private bool _disposed;
+    private SecureFolderFileSystem? _mountedFs;
+    private Action? _mountedHandler;
 
     public int LastError => _lastError;
 
     public Result<string> Mount(char driveLetter, SecureFolderFileSystem fs)
     {
+        UnsubscribeMounted();
         _mountReady.Reset();
         _lastError = 0;
+
+        // El FS eleva MountedSuccessfully desde su callback Mounted: esa señal
+        // completa el Wait en éxito sin depender del status devuelto por _host.Mount.
+        _mountedHandler = () =>
+        {
+            _lastError = 0;
+            _mountReady.Set();
+        };
+        _mountedFs = fs;
+        fs.MountedSuccessfully += _mountedHandler;
 
         string mountPoint = $"{driveLetter}:";
 
@@ -70,10 +83,21 @@ public sealed class WinFspMountProvider : IMountProvider, IDisposable
         return Result<string>.Ok(mountPoint);
     }
 
+    // ── Suscripción al callback de montaje ──────────────────────────────
+
+    private void UnsubscribeMounted()
+    {
+        if (_mountedFs is not null && _mountedHandler is not null)
+            _mountedFs.MountedSuccessfully -= _mountedHandler;
+        _mountedFs = null;
+        _mountedHandler = null;
+    }
+
     public Result Unmount()
     {
         try
         {
+            UnsubscribeMounted();
             _host?.Unmount();
             _dispatchThread?.Join(5000);
             return Result.Ok();
@@ -88,6 +112,7 @@ public sealed class WinFspMountProvider : IMountProvider, IDisposable
     {
         if (_disposed) return;
         Unmount();
+        UnsubscribeMounted();
         _host?.Dispose();
         _disposed = true;
         GC.SuppressFinalize(this);

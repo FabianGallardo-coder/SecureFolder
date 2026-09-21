@@ -13,10 +13,12 @@ siguientes ciclos de trabajo.
 ## Pending tasks (por prioridad)
 
 ### Bugs abiertos
-1. **Archivos de 0 bytes se pierden al bloquear** — pérdida de datos silenciosa. Ver
-   [zero-byte-files](./zero-byte-files.md). Prioridad alta.
-2. **Primer desbloqueo de la sesión a veces no monta Z:** — falla silenciosa, sin causa.
-   Ver [first-unlock-flaky](./first-unlock-flaky.md). Prioridad media.
+1. **Archivos de 0 bytes se pierden al bloquear** — ~~pérdida de datos silenciosa~~ **FIJADO en
+   código + test de regresión `ZeroByteFileTests` (2026-09-20)**. Pendiente solo repro E2E físico.
+   Ver [zero-byte-files](./zero-byte-files.md).
+2. **Primer desbloqueo de la sesión a veces no monta Z:** — **causa hallada y FIJADA**: faltaba
+   el override `Mounted` → el mount se desmontaba solo a los ~10-12 s. Pendiente solo repro E2E
+   físico. Ver [first-unlock-flaky](./first-unlock-flaky.md).
 
 ### Funcionalidad sin cablear
 3. **"Cambiar contraseña" y "Eliminar vault" sin botón en la UI** — la lógica existe en
@@ -24,18 +26,27 @@ siguientes ciclos de trabajo.
    Prioridad media.
 
 ### Verificación pendiente
-4. **QA E2E sobre la app instalada** — el instalado (`C:\Program Files\SecureFolder\`) se probó
-   solo en smoke; el repro completo corrió sobre `src\SecureFolder.App\bin\Release\...`.
-   Prioridad baja.
+4. **QA E2E sobre la app instalada** — el instalador `release\SecureFolderSetup.exe` (45,5 MB,
+   2026-09-20) se regeneró con los binaries corregidos + WinFsp MSI; falta el repro físico en
+   máquina con escritorio (requiere UAC + UI interactiva).
 5. **"Bloquear todas"** — `CountToVisibleConverter` arreglado; verificar visualmente con vars
    vaults al mismo tiempo en el build final.
 
-## Completado (último ciclo, commit `2713f28`)
+## Completado (2026-09-21)
+- **Clic en tarjeta de vault desbloqueado no abría la carpeta** → FIJADO: `ShellExecute` sobre la
+  raíz de la unidad WinFsp no abre ventana; ahora se lanza `explorer.exe "{letra}:\"`. QA físico
+  PASS. Ver [clic-tarjeta-no-abre-carpeta](./clic-tarjeta-no-abre-carpeta.md).
+
+## Completado (último ciclo, QA Release headless 2026-09-20)
+- Bugs #1 (zero-byte) y #2 (first-unlock flaky → timeout de montaje) fijados en código + tests de
+  regresión. Suite completa **45/45**, build **0 advertencias / 0 errores**.
+- Hallazgo menor: warning `xUnit1013` (Dispose público sin `IDisposable`) en `ZeroByteFileTests`
+  → corregido implementando `IDisposable` + `GC.SuppressFinalize`.
 - Enumeración de raíz colgada → fijo (ver `enumeration-root-hang.md`).
 - Clic físico de "Crear carpeta segura" → fijo (fila del Grid a `Auto`).
 - `CountToVisibleConverter` para `int` (Bloquear todas).
 - Documentación: README (limitaciones), `docs/`, `AGENTS.md`, esta base de conocimiento.
-- Instalador regenerado e instalado (Inno Setup, `release\SecureFolderSetup.exe`).
+- Instalador regenerado e instalado (Inno Setup, `release\SecureFolderSetup.exe` 45,5 MB).
 
 ## References
 

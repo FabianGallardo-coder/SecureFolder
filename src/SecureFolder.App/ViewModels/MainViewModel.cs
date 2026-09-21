@@ -185,7 +185,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (result.IsSuccess)
         {
             IsUnlockDialogOpen = false;
-            RefreshVaultList();
             StatusMessage = $"Carpeta segura '{SelectedVault.Name}' desbloqueada. La unidad {SelectedVault.DriveLetter}:\\ ya está disponible.";
         }
         else
@@ -203,7 +202,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         if (result.IsSuccess)
         {
-            RefreshVaultList();
             StatusMessage = $"Carpeta segura '{vault.Name}' bloqueada.";
         }
         else
@@ -215,14 +213,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenVaultFolder(VaultInfo vault)
     {
-        if (vault.IsUnlocked && vault.DriveLetter.HasValue)
+        if (!vault.IsUnlocked || !vault.DriveLetter.HasValue)
+            return;
+
+        string path = $"{vault.DriveLetter}:\\";
+        try
         {
-            string path = $"{vault.DriveLetter}:\\";
+            // ShellExecute sobre la raíz de una unidad WinFsp no abre nada (el volumen
+            // virtual no expone un ítem de shell asociable). Lanzar explorer.exe con la
+            // ruta como argumento sí abre la ventana del explorador.
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = path,
+                FileName = "explorer.exe",
+                Arguments = path,
                 UseShellExecute = true
             });
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"No se pudo abrir la carpeta: {ex.Message}";
         }
     }
 
@@ -374,13 +383,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var result = await _vaultManager.LockVaultAsync(vault.Id);
             if (result.IsSuccess) locked++;
         }
-        RefreshVaultList();
         StatusMessage = $"Se bloquearon {locked} carpeta(s) segura(s).";
     }
 
     private void RefreshVaultList()
     {
-        Vaults = new ObservableCollection<VaultInfo>(_vaultManager.Vaults);
+        var current = _vaultManager.Vaults;
+        Vaults.Clear();
+        foreach (var vault in current)
+        {
+            Vaults.Add(vault);
+        }
     }
 
     private async void AutoLockTimer_Tick(object? sender, EventArgs e)
@@ -393,7 +406,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 if (elapsed.TotalMinutes >= vault.AutoLockTimeoutMinutes)
                 {
                     await _vaultManager.LockVaultAsync(vault.Id);
-                    RefreshVaultList();
                     StatusMessage = $"Carpeta segura '{vault.Name}' bloqueada automáticamente por inactividad.";
                 }
             }

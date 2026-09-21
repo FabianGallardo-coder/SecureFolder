@@ -29,6 +29,15 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
     private readonly SortedSet<string> _allDirs = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _deletedPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly ManualResetEventSlim _mountReady = new(false);
+
+    /// <summary>
+    /// Se eleva cuando WinFsp confirma que el volumen quedó montado correctamente
+    /// (callback virtual <see cref="FileSystemBase.Mounted"/>, invocado justo después del
+    /// montaje y antes de recibir operaciones). Permite que el proveedor de montaje
+    /// separe el "éxito" del "fallo" en su señal WaitHandle.
+    /// </summary>
+    internal event Action? MountedSuccessfully;
+
     private readonly object _handleLock = new();
     private readonly Dictionary<string, int> _openHandles = new(StringComparer.OrdinalIgnoreCase);
 
@@ -100,6 +109,7 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
             {
                 Name = Path.GetFileName(path),
                 OriginalSize = entry.OriginalSize,
+                Size = entry.OriginalSize,
                 VaultDataOffset = entry.DataOffset,
                 VaultEncryptedSize = entry.EncryptedSize,
                 CreationTime = entry.CreationTime.UtcDateTime,
@@ -311,6 +321,16 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
         return 0;
     }
 
+    /// <summary>
+    /// Callback virtual de WinFsp invocado justo después de montar el volumen.
+    /// Eleva la señal que desbloquea el Wait del proveedor de montaje.
+    /// </summary>
+    public override int Mounted(object Host)
+    {
+        MountedSuccessfully?.Invoke();
+        return base.Mounted(Host);
+    }
+
     public override int GetSecurityByName(
         string FileName,
         out uint FileAttributes,
@@ -480,23 +500,48 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
         if (FileDesc is not MemFile file)
             return STATUS_OBJECT_NAME_NOT_FOUND;
 
-        if (file.VaultEncryptedSize <= 0)
-            return STATUS_END_OF_FILE;
-
-        if (Offset >= (ulong)file.OriginalSize)
-            return STATUS_END_OF_FILE;
-
-        // Calculate how much we can actually read
-        int available = (int)Math.Min(Length, (ulong)file.OriginalSize - Offset);
-        if (available <= 0) return 0;
-
         try
         {
+            // ── Lectura desde el búfer en memoria (read-after-write) ──
+            // Un archivo recién escrito vive en file.Buffer hasta FlushDirtyFiles;
+            // servir desde disco devolvería vacío (o el slice equivocado) porque
+            // los datos aún no están persistidos en el .sfv.
+            if (file.Buffer is { Length: > 0 } memoryBuffer)
+            {
+                if (Offset >= (ulong)memoryBuffer.Length)
+                    return STATUS_END_OF_FILE;
+
+                int bufferAvailable = (int)Math.Min(Length, (ulong)memoryBuffer.Length - Offset);
+                if (bufferAvailable <= 0) return 0;
+
+                byte[] readBuffer = new byte[bufferAvailable];
+                memoryBuffer.Seek((long)Offset, SeekOrigin.Begin);
+                int bufferTotalRead = memoryBuffer.Read(readBuffer, 0, bufferAvailable);
+                if (bufferTotalRead > 0)
+                {
+                    Marshal.Copy(readBuffer, 0, Buffer, bufferTotalRead);
+                    BytesTransferred = (uint)bufferTotalRead;
+                }
+                return 0;
+            }
+
+            if (file.VaultEncryptedSize <= 0)
+                return STATUS_END_OF_FILE;
+
+            if (Offset >= (ulong)file.OriginalSize)
+                return STATUS_END_OF_FILE;
+
+            // Calculate how much we can actually read
+            int available = (int)Math.Min(Length, (ulong)file.OriginalSize - Offset);
+            if (available <= 0) return 0;
             // Logic for Version 2: Chunked Lazy Loading
             // We need to read 'available' bytes starting at 'Offset'.
             // Each chunk is 64KB.
 
             byte[] resultBuffer = new byte[available];
+            // Longitud real del archivo .sfv: la cota de cada chunk se compara contra
+            // este largo, nunca contra la longitud del string de la ruta del vault.
+            long vaultFileLength = new FileInfo(_vault.Info.VaultFilePath).Length;
             int totalRead = 0;
 
             while (totalRead < available)
@@ -515,7 +560,7 @@ public sealed class SecureFolderFileSystem : FileSystemBase, IDisposable
                 long chunkStartInVault = _dataStartOffset + file.VaultDataOffset +
                                         (long)chunkIndex * (VaultFormat.ChunkSize + VaultFormat.ChunkOverhead);
 
-                if (chunkStartInVault < 0 || chunkStartInVault >= _vault.Info.VaultFilePath.Length) // Simplified check, should use fs.Length
+                if (chunkStartInVault < 0 || chunkStartInVault + (VaultFormat.ChunkSize + VaultFormat.ChunkOverhead) > vaultFileLength) // Cota real: el chunk debe caber dentro del .sfv
                 {
                     // If we hit a gap or end of vault, we stop
                     break;

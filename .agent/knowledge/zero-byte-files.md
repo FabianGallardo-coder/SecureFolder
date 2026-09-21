@@ -7,9 +7,10 @@ tags: [data-loss, flush, index, empty-file]
 
 ## Summary
 
-**ABIERTO.** Los archivos vacíos (0 bytes) se eliminan del índice al bloquear el vault:
-`FlushDirtyFiles` hace `FileIndex.Remove(rel)` cuando `plaintext.Length == 0`, así que el
-archivo (y el directorio que solo lo contiene) desaparece tras reabrir el vault.
+**FIJADO en código; QA Release 45/45 OK. Pendiente solo repro E2E físico.** Los archivos vacíos
+(0 bytes) se eliminan del índice al bloquear el vault: `FlushDirtyFiles` hacía
+`FileIndex.Remove(rel)` cuando `plaintext.Length == 0`, así que el archivo (y el directorio que
+solo lo contiene) desaparecía tras reabrir el vault.
 
 ## Context
 
@@ -31,7 +32,14 @@ if (plaintext.Length == 0)
 ```
 
 La codificación GCM (nonce 12B + tag 16B + ciphertext vacío = 28B) permitiría persistirlo sin
-sobrecarga extra, pero hoy se descarta antes de cifrar.
+sobrecarga extra.
+
+## Fix aplicado (2026-09-20)
+
+El índice ahora retiene las entradas de archivos vacíos: `FileEntry` con `DataOffset=-1`
+(`Length=0`), cifrando el chunk vacío por el flujo GCM estándar del formato (overhead 28B).
+El camino de vacío ya no ejecuta `FileIndex.Remove`. Se agregó test de regresión
+`ZeroByteFileTests.ZeroByteFile_ShouldPersistAfterUnmount` (45 tests totales, todos verdes).
 
 ## Rationale
 
@@ -40,10 +48,12 @@ datos, no como característica.)
 
 ## Consequences
 
-- Crear un archivo vacío y bloquearlo = perderlo silenciosamente al reabrir.
-- Al corregirlo, el flujo GCM de chunk vacío ya está soportado por el formato (overhead 28B);
-  el formato `.sfv` no necesita cambios.
+- ~~Crear un archivo vacío y bloquearlo = perderlo silenciosamente al reabrir.~~ Corregido.
+- El flujo GCM de chunk vacío ya está soportado por el formato (overhead 28B); el formato `.sfv`
+  no requirió cambios.
+- Pendiente QA E2E físico: crear archivo 0-bytes en `Z:`, bloquear, desbloquear y verificar que persiste.
 
 ## References
 
 - `src\SecureFolder.Core\Filesystem\SecureFolderFileSystem.cs:287-292`
+- `src\SecureFolder.Tests\Filesystem\ZeroByteFileTests.cs`

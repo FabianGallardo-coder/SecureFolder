@@ -38,3 +38,31 @@ Este documento describe el plan de pruebas ejecutado para validar la estabilidad
 - **Tests Unitarios**: 45/45 superados.
 - **Build Release**: 0 errores, 0 advertencias.
 - **Estabilidad**: Sin crashes reportados durante el ciclo de montaje/desmontaje.
+
+## 5. Ejecución de QA (ciclo Release desde cero — 2026-09-20)
+
+**A1. Rebuild Release (clean → build)**
+- `dotnet clean` + `dotnet build SecureFolder.App -c Release`: **0 advertencias / 0 errores**.
+
+**A2. Suite de pruebas (xUnit + FluentAssertions, Release)**
+- **45/45 correctos, 0 errores, 0 omitidos**, duración 1 s.
+- Hallazgo: `public void Dispose` en `ZeroByteFileTests` sin implementar `IDisposable` generaba **warning xUnit1013** → corregido implementando `IDisposable` + `GC.SuppressFinalize`. Rebuild ahora **0/0**.
+
+**A3. Publish self-contained + instalador (ISCC / Inno Setup 6, por-usuario)**
+- `dotnet publish SecureFolder.App -c Release -r win-x64 --self-contained true -o release\app` → **141,2 MB en 409 archivos**.
+- `ISCC.exe installer\SecureFolder.iss` → compilación correcta.
+
+**A4. Artefactos verificados (SHA-256)**
+
+| Archivo | Tamaño | Fecha | SHA-256 |
+|---|---|---|---|
+| `release\app\SecureFolder.App.exe` | 0,41 MB | 2026-09-20 11:47 | `1173569F029008F9AA02ACEF5C00E58701ED44905C0381A7AE36667BCDAD4771` |
+| `release\app\SecureFolder.Core.dll` | 0,06 MB | 2026-09-20 11:45 | `B357D05CA5986452AA3777A847C560D0A9F4FC3AF8AB6C90979A321AFED65A02` |
+| `release\SecureFolderSetup.exe` | **45,5 MB** | 2026-09-20 11:47 | `055DA92B88FBA5EAAD823D65F8EBB8CFF67C42DB35169E0A44B1CA9EF3EF9835` |
+| `installer\vendor\winfsp-2.2.26215.msi` | 2,11 MB | 2026-09-17 10:34 | `2ECB5C89405488A95BBD8A01875E02C48534FD37BBDFD84488F7590464D65944` |
+
+**Pendiente (QA E2E físico, requiere UAC + sesión interactiva, no headless):**
+- Instalar `release\SecureFolderSetup.exe`.
+- Verificar montaje de `Z:` que persiste **>12 s** (regresión del override `Mounted`).
+- `Get-Content Z:\...` tras escribir (regresión de read-after-write/serve desde buffer).
+- Persistencia de archivos de **0 bytes** tras bloquear/desbloquear.

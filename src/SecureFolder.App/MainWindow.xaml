@@ -150,20 +150,6 @@
                                                    Margin="0,2,0,0"/>
                                     </StackPanel>
 
-                                    <!-- Vault Info -->
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontSize="16" FontWeight="SemiBold"
-                                                   Foreground="White"/>
-                                        <TextBlock Text="{Binding StatusText}"
-                                                   FontSize="12" Foreground="#888"
-                                                   Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding VaultFilePath}"
-                                                   FontSize="10" Foreground="#555"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Margin="0,2,0,0"/>
-                                    </StackPanel>
-
                                     <!-- Actions -->
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Style="{StaticResource PrimaryButton}"

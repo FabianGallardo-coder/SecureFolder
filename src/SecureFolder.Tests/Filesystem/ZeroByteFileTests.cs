@@ -6,7 +6,7 @@ using System.IO;
 
 namespace SecureFolder.Tests.Filesystem;
 
-public class ZeroByteFileTests
+public class ZeroByteFileTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(
         Path.GetTempPath(), "SecureFolderTests_ZeroByte", Guid.NewGuid().ToString("N"));
@@ -20,6 +20,8 @@ public class ZeroByteFileTests
     {
         try { Directory.Delete(_tempDir, recursive: true); }
         catch { }
+
+        GC.SuppressFinalize(this);
     }
 
     [Fact]
