@@ -207,6 +207,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         else
         {
+            // Vaciar la contraseña para que el reintento no concatene con la anterior.
+            UnlockPassword = "";
             StatusMessage = result.Error ?? "Contraseña incorrecta.";
         }
     }

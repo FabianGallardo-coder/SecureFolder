@@ -35,6 +35,12 @@ public partial class MainWindow : Window
             case nameof(MainViewModel.IsUnlockDialogOpen) when ViewModel.IsUnlockDialogOpen:
                 UnlockPasswordBox.Clear();
                 break;
+            // Si el ViewModel resetea la contraseña (p. ej. tras un desbloqueo fallido
+            // el diálogo sigue abierto), vaciar la caja para que el reintento no
+            // concatene la contraseña anterior.
+            case nameof(MainViewModel.UnlockPassword) when string.IsNullOrEmpty(ViewModel.UnlockPassword):
+                UnlockPasswordBox.Clear();
+                break;
         }
     }
 

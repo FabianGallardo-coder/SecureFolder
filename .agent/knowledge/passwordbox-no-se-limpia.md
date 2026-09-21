@@ -39,6 +39,13 @@ control. Al reabrir el diálogo, el `PasswordBox` conserva el texto anterior.
   - `IsCreateDialogOpen` → `CreatePasswordBox.Clear()` + `CreatePasswordConfirmBox.Clear()`
   - `IsUnlockDialogOpen` → `UnlockPasswordBox.Clear()`
 
+**Ampliación (2026-09-21):** tras un desbloqueo **fallido** el diálogo queda abierto y la caja
+conservaba la contraseña, así que reintentar sin borrar concatenaba (`incorrecta` + `pass1234`).
+Se limpia también cuando el ViewModel resetea `UnlockPassword` (caso
+`nameof(MainViewModel.UnlockPassword) when string.IsNullOrEmpty(...)`) y `UnlockVaultAsync` pone
+`UnlockPassword = ""` en el camino de fallo. Verificado: intento con contraseña incorrecta →
+reintento correcto **sin** limpiar el campo → desbloquea.
+
 Verificado con QA E2E físico: **steps 1–9 PASS**, incluida la persistencia (archivos sobreviven
 lock/re-unlock). Suite 45/45, build 0/0.
 
