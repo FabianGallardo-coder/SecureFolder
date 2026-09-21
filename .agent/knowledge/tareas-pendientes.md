@@ -21,14 +21,20 @@ siguientes ciclos de trabajo.
    dev **PASS** (`e2e-full.ps1`, 2026-09-21). Ver [first-unlock-flaky](./first-unlock-flaky.md).
 
 ### Verificación pendiente
-3. **QA E2E sobre la app instalada** — el instalador `release\SecureFolderSetup.exe` (45,5 MB,
-   2026-09-21) se regeneró con los binaries corregidos + WinFsp MSI; falta el repro físico en
-   máquina con escritorio (requiere UAC + UI interactiva). El flujo completo ya pasa sobre el build
-   dev vía `e2e-full.ps1` (steps 1–9 PASS).
+3. **QA E2E sobre la app instalada** — el binario publicado (`release\app`) ya se verificó NO elevado
+   el 2026-09-21 (desbloqueo + `Explorer Z:\`). Falta el repro físico del **instalador**
+   `release\SecureFolderSetup.exe` en máquina con escritorio (requiere UAC + UI interactiva).
 4. **"Bloquear todas"** — `CountToVisibleConverter` arreglado; verificar visualmente con vars
    vaults al mismo tiempo en el build final.
+5. **Regenerar artefactos Release con el fix de `RemoveVault`** (2026-09-21) — `release\app` +
+   `release\SecureFolderSetup.exe` (13:01–13:02) se publicaron antes de corregir el crash de
+   "Eliminar"; tras regenerar, actualizar los hashes en `docs/qa-report.md` (sección 6).
 
 ## Completado (2026-09-21)
+- **Code review del ciclo (menú ⚙) encontró un crash en "Eliminar"** → `RemoveVault` recibía `null`
+  (botón sin `CommandParameter` + comando que usaba su parámetro en vez de `SelectedVault`) → NRE al
+  confirmar el borrado. FIJADO usando `SelectedVault` + `Overlay_Click` ahora cierra Renombrar/
+  Eliminar. QA `delete-e2e.ps1` PASS. Ver [menu-opciones-cambiar-contrasena](./menu-opciones-cambiar-contrasena.md).
 - **Menú `⚙` de la tarjeta y "Cambiar contraseña"** → FIJADO: el `⚙` ofrecía "Cambiar contraseña"
   con el vault **desbloqueado**, pero el Core lo exige **bloqueado** (`VaultManager`); además
   faltaba el overlay XAML (diálogo invisible) y "Eliminar" no tenía disparador. Ahora `⚙` abre un

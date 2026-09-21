@@ -56,6 +56,22 @@ abre un `ContextMenu` con las acciones válidas.
   `pass5678` ✓ → se restauró a `pass1234` y desbloquea ✓
 - Desbloqueado → `⚙` muestra el aviso y **no** abre el menú ✓
 
+## Bug adicional encontrado en code review (2026-09-21): "Eliminar" crasheaba
+
+Al revisar el diff del menú, `RemoveVault` recibía **`null`** siempre: el botón del diálogo usa
+`Command="{Binding RemoveVaultCommand}"` **sin `CommandParameter`** y el comando usaba su parámetro
+(`vault.Id`) en vez de `SelectedVault` (a diferencia de `RenameVaultAsync`/`ChangePasswordAsync`).
+Al confirmar la eliminación → NRE en `vault.Id` y, sin `DispatcherUnhandledException` en
+`App.xaml.cs`, la app moría. Quedó alcanzable al cablear el disparador del `⚙` (el QA previo solo
+abría la confirmación, no la confirmaba).
+
+FIJADO: `RemoveVault()` (sin parámetro) usa `SelectedVault` y guarda nulidad. Además `Overlay_Click`
+ahora cancela también Rename/Delete (antes el fondo solo cerraba Create/Unlock/ChangePassword).
+
+Verificación QA (`%TEMP%\opencode\qa\delete-e2e.ps1`, build fresca): crear `QADel*` → `⚙` →
+`Eliminar carpeta segura` → confirmar → tarjeta fuera de la lista, proceso vivo, estado
+"eliminada de la lista", `.sfv` conservado en disco (flag físico = false) → **PASS**. Build 0/0, 45/45.
+
 ## Notas para QA
 
 - **El `⚠` no se testea con `SetValue`**: los `PasswordBox` no exponen `ValuePattern`; usar

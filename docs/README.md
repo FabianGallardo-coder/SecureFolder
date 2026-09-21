@@ -10,6 +10,7 @@ Documentación técnica del proyecto. La fuente de verdad operativa del agente
 | [Arquitectura](./arquitectura.md) | Proyectos, capas, flujo de cifrado y montaje |
 | [Formato del vault (.sfv)](./formato-sfv.md) | Estructura binaria del contenedor cifrado |
 | [Enumeración WinFsp](./enumeracion.md) | Protocolo IRP/marker y por qué casó el bug de la raíz |
+| [QA / pruebas](./qa-report.md) | Matriz funcional, seguridad y ciclos de verificación |
 
 ## Guía rápida
 

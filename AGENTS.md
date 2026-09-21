@@ -46,9 +46,11 @@ dotnet test src/SecureFolder.Tests/SecureFolder.Tests.csproj -c Release
 ## Memoria del agente (LEER al empezar)
 
 - **Base de conocimiento**: `.agent/knowledge/INDEX.md` — bugs abiertos, decisiones y pendientes.
-- **Bugs abiertos (ver `.agent/knowledge/`)**:
-  1. Archivos de **0 bytes** se eliminan del índice al bloquear (`FlushDirtyFiles`, pérdida de datos).
-  2. Primer **desbloqueo** de la sesión a veces no monta Z: (falla silenciosa).
-- **Pendientes/cableados**: "Cambiar contraseña" y "Eliminar vault" existen en Core pero no en la UI.
+- **Bugs (ver `.agent/knowledge/`)**: 0 bytes y primer unlock están **FIJADOS en código + tests**
+  (queda solo repro sobre app instalada). "Eliminar" crasheaba (`RemoveVault` sin
+  `CommandParameter`) → FIJADO usando `SelectedVault`.
+- **Pendientes/cableados**: QA E2E sobre app **instalada** (requiere UAC); verificación visual de
+  "Bloquear todas"; regenerar `release\app` + instalador con el último fix. "Renombrar", "Cambiar
+  contraseña" y "Eliminar" ya están cableados en la UI (menú `⚙`, vault bloqueado).
 - **Docs**: `docs/` contiene la wiki (arquitectura, formato `.sfv`, enumeración WinFsp).
 - Actualizar `.agent/knowledge/` al cerrar o descubrir bugs (regla del skill `knowledge-base-update`).

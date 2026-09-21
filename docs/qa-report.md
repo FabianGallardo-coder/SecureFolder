@@ -66,3 +66,47 @@ Este documento describe el plan de pruebas ejecutado para validar la estabilidad
 - Verificar montaje de `Z:` que persiste **>12 s** (regresión del override `Mounted`).
 - `Get-Content Z:\...` tras escribir (regresión de read-after-write/serve desde buffer).
 - Persistencia de archivos de **0 bytes** tras bloquear/desbloquear.
+
+**Verificado luego (2026-09-21, sobre build dev y binario publicado NO elevado):**
+- Montaje de `Z:` que persiste **>12 s** — PASS (`e2e-full.ps1`, steps 1–9).
+- Lectura tras escritura (read-after-write) — PASS.
+- Persistencia de archivos de **0 bytes** tras bloquear/desbloquear — PASS.
+- Desbloqueo + abrir carpeta desde el binario publicado, app NO elevada — PASS.
+
+**Todavía pendiente (requiere UAC + sesión interactiva):**
+- Instalar `release\SecureFolderSetup.exe` y repetir el ciclo completo sobre la app **instalada**.
+- Regenerar `release\app` + instalador con el fix de `RemoveVault` (ver sección 6) y actualizar los hashes.
+
+## 6. Ciclo QA UI (menú ⚙) y code review (2026-09-21)
+
+**C6. Rebuild Release + suite**: `dotnet build` → **0 advertencias / 0 errores**; xUnit → **45/45**.
+
+**C7. QA funcional (UIA físico, scripts ASCII-only en `%TEMP%\opencode\qa\`):**
+- `options-menu-test.ps1`: botón `⚙` abre menú con Renombrar / Cambiar contraseña / Eliminar solo con
+  el vault bloqueado; cambio de contraseña `pass1234`→`pass5678`→`pass1234` desbloqueando en cada
+  paso; con el vault desbloqueado el `⚙` avisa y **no** abre el menú — PASS.
+- `delete-e2e.ps1` (tras fix): crea `QADel*` → `⚙` → Eliminar → confirmar → tarjeta fuera de lista,
+  proceso vivo, `.sfv` conservado en disco (borrado lógico) — PASS.
+- Binario publicado (`release\app`) NO elevado: desbloqueo + `Explorer Z:\` abre la carpeta — PASS.
+
+**C8. Code review del ciclo (rango `8a9bfcb..HEAD`):**
+- Hallazgo crítico: `RemoveVault` recibía `null` — el botón del diálogo enlazaba `RemoveVaultCommand`
+  **sin `CommandParameter`** y el comando usaba su parámetro (`vault.Id`) en vez de `SelectedVault`,
+  a diferencia de `RenameVaultAsync`/`ChangePasswordAsync`. Al confirmar la eliminación se producía
+  un NRE y, sin `DispatcherUnhandledException` en `App.xaml.cs`, la app crasheaba. **FIJADO** en
+  `2026-09-21` (usar `SelectedVault`) + `Overlay_Click` ahora también cierra Renombrar/Eliminar.
+  Ver `.agent/knowledge/menu-opciones-cambiar-contrasena.md`.
+- Pendientes menores (info): tests UI no versionados (solo `%TEMP%`), desuscripción de
+  `PropertyChanged` en `MainWindow`, contraste del banner de elevación bajo WCAG AA (≈3.4:1 a 11px).
+
+**Artefactos Release del ciclo (2026-09-21 13:01–13:02):**
+
+> Nota: **no incluyen** el fix de `RemoveVault` (2026-09-21); se regeneran en el próximo ciclo y se
+> actualizan los hashes de esta tabla.
+
+| Archivo | Tamaño | Fecha | SHA-256 |
+|---|---|---|---|
+| `release\app\SecureFolder.App.exe` | 0,41 MB | 2026-09-21 13:01 | `93743465E2D17D36A7FF2CD3970809B808D5B43036F92CB1B2E69530B1089044` |
+| `release\app\SecureFolder.Core.dll` | 0,06 MB | 2026-09-21 13:01 | `444BEB1C897DE481306E0767201F62197B65E7DBCD055FDDB6AD47360B024E0B` |
+| `release\SecureFolderSetup.exe` | 47,7 MB | 2026-09-21 13:02 | `7E8B9AFF9B247E31B99F186CBEEC33B37979F4C19CC87E6EEAFDB7D816A5D495` |
+| `installer\vendor\winfsp-2.2.26215.msi` | 2,11 MB | 2026-09-17 10:34 | `2ECB5C89405488A95BBD8A01875E02C48534FD37BBDFD84488F7590464D65944` |
