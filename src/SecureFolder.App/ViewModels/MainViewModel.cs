@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Security.Principal;
 using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -49,6 +50,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _statusMessage = "";
 
     [ObservableProperty]
+    private bool _isElevated;
+
+    [ObservableProperty]
+    private string _elevationWarning = "";
+
+    [ObservableProperty]
     private string _createVaultName = "";
 
     [ObservableProperty]
@@ -78,6 +85,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SecureFolder");
         _vaultManager = new VaultManager(appData);
+
+        // Si la app corre elevada, WinFsp crea la letra de unidad en la sesión de
+        // logon del proceso; el Explorador (no elevado) no puede verla y falla con
+        // "Ubicación no disponible". Avisamos al inicio.
+        IsElevated = IsRunningElevated();
+        if (IsElevated)
+        {
+            ElevationWarning =
+                "Ejecutando como administrador: la unidad virtual no será visible en el " +
+                "Explorador. Cerrá la aplicación y abrila sin permisos de administrador.";
+        }
 
         RefreshVaultList();
 
@@ -215,6 +233,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (!vault.IsUnlocked || !vault.DriveLetter.HasValue)
             return;
+
+        // Con la app elevada el Explorador (no elevado) no ve la unidad montada.
+        if (IsElevated)
+        {
+            StatusMessage =
+                "No se puede abrir la carpeta desde el Explorador mientras la aplicación " +
+                "corre como administrador. Reiniciá la aplicación sin permisos de administrador.";
+            return;
+        }
 
         string path = $"{vault.DriveLetter}:\\";
         try
@@ -410,6 +437,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 }
             }
         }
+    }
+
+    private static bool IsRunningElevated()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
     }
 
     public void Dispose()

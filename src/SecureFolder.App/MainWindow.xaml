@@ -97,6 +97,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -114,8 +115,18 @@
                        FontSize="14" Foreground="#888"
                        Margin="0,0,0,16"/>
 
+            <!-- Aviso de ejecución elevada -->
+            <Border Grid.Row="2"
+                    Background="#3a1f1f" BorderBrush="#e94560" BorderThickness="1"
+                    CornerRadius="6" Padding="12,8" Margin="0,0,0,12"
+                    Visibility="{Binding IsElevated, Converter={StaticResource BoolToVisibleConverter}}">
+                <TextBlock Text="{Binding ElevationWarning}"
+                           FontSize="11" Foreground="#e94560"
+                           TextWrapping="Wrap"/>
+            </Border>
+
             <!-- Vault List -->
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Vaults}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -190,7 +201,7 @@
             </ScrollViewer>
 
             <!-- Bottom Bar -->
-            <Grid Grid.Row="3" Margin="0,16,0,0">
+            <Grid Grid.Row="4" Margin="0,16,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -215,7 +226,7 @@
             </Grid>
 
             <!-- Status Bar -->
-            <TextBlock Grid.Row="4"
+            <TextBlock Grid.Row="5"
                        Text="{Binding StatusMessage}"
                        FontSize="11" Foreground="#e94560"
                        Margin="0,8,0,0"
