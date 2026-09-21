@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecureFolder — Pitch</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
+<style>
+  :root {
+    --sf-bg: #1a1a2e;
+    --sf-bg2: #16213e;
+    --sf-accent: #e94560;
+    --sf-fg: #eee;
+    --sf-muted: #888;
+  }
+  html, body {
+    background: radial-gradient(1200px 600px at 50% -10%, #27264b 0%, var(--sf-bg2) 45%, var(--sf-bg) 100%);
+  }
+  .reveal {
+    color: var(--sf-fg);
+    font-family: "Segoe UI", "Inter", system-ui, sans-serif;
+    font-size: 34px;
+  }
+  .reveal h1, .reveal h2, .reveal h3 {
+    font-family: inherit;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 700;
+  }
+  .reveal h1 { font-size: 1.9em; }
+  .reveal h2 { font-size: 1.25em; line-height: 1.25; color: var(--sf-fg); }
+  .reveal .accent { color: var(--sf-accent); }
+  .reveal .muted { color: #c3c7d4; font-size: 0.7em; }
+  .reveal .lead { font-size: 0.8em; }
+  .reveal ul, .reveal ol { font-size: 0.72em; line-height: 1.5; }
+  .reveal li { margin: 0.35em 0; }
+  .reveal table { font-size: 0.62em; margin: 0 auto; border-collapse: collapse; }
+  .reveal th, .reveal td { padding: 0.35em 0.8em; border-bottom: 1px solid #333; }
+  .reveal th { color: var(--sf-accent); }
+  .row { display: flex; gap: 1.2em; align-items: stretch; justify-content: center; }
+  .card {
+    flex: 1; max-width: 320px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(233,69,96,0.35);
+    border-radius: 12px; padding: 1em;
+  }
+  .card h3 { font-size: 0.62em; margin: 0 0 0.4em; color: var(--sf-accent); }
+  .card p { font-size: 0.55em; margin: 0; color: var(--sf-fg); }
+  .big { font-size: 2.6em; font-weight: 800; color: var(--sf-accent); line-height: 1; }
+  .flow { display: flex; align-items: center; justify-content: center; gap: 0.6em; font-size: 0.62em; }
+  .step {
+    background: rgba(233,69,96,0.12);
+    border: 1px solid var(--sf-accent);
+    border-radius: 10px; padding: 0.7em 0.9em; min-width: 200px;
+  }
+  .step b { color: var(--sf-accent); display: block; font-size: 0.85em; margin-bottom: 0.2em; }
+  .arrow { color: var(--sf-accent); font-size: 1.2em; font-weight: 700; }
+  .pill {
+    display: inline-block; font-size: 0.5em; color: var(--sf-fg);
+    background: rgba(233,69,96,0.15); border: 1px solid rgba(233,69,96,0.5);
+    border-radius: 999px; padding: 0.3em 0.9em; margin: 0 0.3em 0.3em 0;
+  }
+  .check { color: #4ade80; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+  <!-- 1 · Portada -->
+  <section>
+    <h1>SecureFolder</h1>
+    <p class="lead">Tus archivos más sensibles, protegidos <span class="accent">sin que lo notes</span>.</p>
+    <p style="margin-top:1.4em">
+      <span class="pill">AES-256-GCM</span><span class="pill">Argon2id</span><span class="pill">Unidad virtual</span>
+    </p>
+    <aside class="notes">
+      Hola, gracias por el tiempo. SecureFolder protege los archivos que no pueden filtrarse:
+      contratos, finanzas, datos de clientes. La idea en una frase: una carpeta cifrada que se
+      comporta como una unidad normal del equipo. Vas a ver cómo, por qué es seguro y dónde estamos.
+    </aside>
+  </section>
+
+  <!-- 2 · El problema -->
+  <section>
+    <h2>Hoy, proteger archivos es <span class="accent">incómodo o insuficiente</span></h2>
+    <ul>
+      <li>Cifrar a mano rompe el flujo: adiós a "esto lo hago después"</li>
+      <li>ZIP con contraseña: lento, centralizado y de descifrado manual</li>
+      <li>Discos cifrados completos: pesados y con riesgo de pérdida total</li>
+      <li>Resultado: la gente deja los datos sensibles <b>sin cifrar</b></li>
+    </ul>
+    <aside class="notes">
+      El problema no es la tecnología, es el hábito. Cifrar hoy significa cerrar el flujo de
+      trabajo, esperar, descifrar, volver a montar. Por eso la mayoría directamente no lo hace.
+      Discos completos tienen otro costo: cifran todo y pueden dejar todo inaccesible si algo sale
+      mal. Hace falta el punto medio.
+    </aside>
+  </section>
+
+  <!-- 3 · La solución -->
+  <section>
+    <h2>Una carpeta cifrada que se <span class="accent">monta como unidad</span></h2>
+    <div class="row" style="margin-top:0.8em">
+      <div class="card"><h3>Creas la carpeta</h3><p>Nombre, ubicación y contraseña.</p></div>
+      <div class="card"><h3>Aparece como Z:</h3><p>Una unidad normal en el Explorador.</p></div>
+      <div class="card"><h3>Arrastrás y listo</h3><p>Se cifra al vuelo; se lee de forma transparente.</p></div>
+    </div>
+    <aside class="notes">
+      SecureFolder crea una carpeta segura (un vault). La ves como el disco Z: y arrastrás
+      archivos como en cualquier carpeta. La magia: el cifrado y descifrado ocurren al vuelo,
+      invisibles. Cualquier programa la usa normalmente. Cuando cerrás el vault, todo queda cifrado
+      en disco.
+    </aside>
+  </section>
+
+  <!-- 4 · Cómo funciona -->
+  <section>
+    <h2>Tres pasos, cero atajos</h2>
+    <div class="flow">
+      <div class="step"><b>1 · Crear</b>Vault con contraseña</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>2 · Usar</b>Drag &amp; drop en Z:</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>3 · Cerrar</b>Un clic o auto-bloqueo</div>
+    </div>
+    <p class="muted" style="margin-top:1em">Desde la creación, todo lo que entra a Z: queda cifrado en el archivo .sfv</p>
+    <aside class="notes">
+      Primero creamos el vault: nombre, dónde guardarlo y contraseña. Después trabajamos en Z: con
+      normalidad; los archivos se cifran al instante. Y al cerrar (manual o por auto-bloqueo), se
+      desmonta la unidad y en disco queda solo el archivo cifrado .sfv.
+    </aside>
+  </section>
+
+  <!-- 5 · Seguridad -->
+  <section>
+    <h2>Cifrado de grado militar, <span class="accent">sin atajos</span></h2>
+    <ul>
+      <li><b>AES-256-GCM</b> por archivo: autenticado y a prueba de manipulación</li>
+      <li><b>Argon2id</b> (64&nbsp;MB · 3 iteraciones · 4 hilos): resistente a fuerza bruta</li>
+      <li><b>Claves KEK/DEK</b>: tu contraseña nunca se guarda ni se sube a la nube</li>
+      <li><b>HMAC-SHA256</b> en el encabezado: detecta cualquier alteración</li>
+    </ul>
+    <aside class="notes">
+      Estándares modernos, sin inventos propios. AES-256-GCM no solo cifra, autentica: si alguien
+      modifica un archivo, se detecta. Argon2id es el KDF ganador del password-hashing competition:
+      hace el brute-force caro incluso con hardware dedicado. Y por el esquema KEK/DEK, la
+      contraseña jamás se persiste. Si roban el archivo, sin la contraseña no sirve de nada.
+    </aside>
+  </section>
+
+  <!-- 6 · Diferenciación -->
+  <section>
+    <h2>El punto medio que faltaba</h2>
+    <table>
+      <thead><tr><th></th><th>Disco cifrado</th><th>ZIP con clave</th><th>SecureFolder</th></tr></thead>
+      <tbody>
+        <tr><td>Alcance</td><td>Todo el disco</td><td>Un archivo</td><td>Tu carpeta</td></tr>
+        <tr><td>Acceso</td><td>Re-montar la máquina</td><td>Descifrar y volver a cifrar</td><td>Unidad siempre lista</td></tr>
+        <tr><td>Transparencia</td><td class="check">Natural</td><td class="muted">Manual</td><td class="check">Natural</td></tr>
+        <tr><td>Agilidad</td><td class="muted">Pesado</td><td class="muted">Lento</td><td class="check">Instantáneo</td></tr>
+      </tbody>
+    </table>
+    <aside class="notes">
+      TrueCrypt/VeraCrypt cifran discos enteros: power, pero pesados. El ZIP cifrado es manual y
+      rompe el trabajo. SecureFolder toma lo bueno de cada uno: transparencia de disco cifrado con
+      la ligereza y el control de una carpeta. No cifra lo que no hace falta: solo lo que elegís.
+    </aside>
+  </section>
+
+  <!-- 7 · Experiencia -->
+  <section>
+    <h2>Se siente como una carpeta normal</h2>
+    <ul>
+      <li>Funciona con Explorer, Office, editores: <b>cualquier app</b> usa Z:</li>
+      <li>Sin duplicados ni re-cifrados manuales: todo en el momento</li>
+      <li>Auto-bloqueo por tiempo y <b>bloqueo con un clic</b></li>
+      <li>Cambiá la contraseña cuando quieras — <b>sin volver a cifrar tus datos</b></li>
+      <li>Vive en la bandeja: seguro en segundo plano mientras trabajás</li>
+    </ul>
+    <aside class="notes">
+      La propuesta de valor es que no haya propuesta: no tiene que aprender nada. Abren Z:, guardan,
+      cierran. El auto-bloqueo protege a quien deja la máquina abierta: pasado el tiempo, la unidad
+      se desmonta sola. La app vive en la bandeja sin estorbar.
+    </aside>
+  </section>
+
+  <!-- 8 · Estado del producto -->
+  <section>
+    <h2>Código de producción, <span class="accent">sin deuda de confianza</span></h2>
+    <div class="row">
+      <div class="card"><div class="big">45</div><h3>pruebas pasando</h3><p>Suite automatizada de cripto y sistema de archivos.</p></div>
+      <div class="card"><div class="big">1</div><h3>archivo instalable</h3><p>Self-contained: incluye todo, sin dependencias.</p></div>
+      <div class="card"><div class="big">100%</div><h3>local</h3><p>Sin nube, sin cuenta, sin backdoors.</p></div>
+    </div>
+    <p class="muted" style="margin-top:0.8em">Cliente nativo Windows (.NET) · ciclo de vida completo del vault: crear, abrir, bloquear, renombrar, cambiar contraseña, eliminar</p>
+    <aside class="notes">
+      Esto no es un mockup: es producto funcionando. 45 pruebas automatizadas sobre cifrado y
+      sistema de archivos, instalador que incluye todo (el motor de unidades virtuales, WinFsp),
+      y ciclo de vida completo verificado por QA de UI: crear, desbloquear, usar archivos,
+      renombrar, cambiar contraseña sin re-cifrar y eliminar con confirmación. Todo sin conexión a
+      internet, que es parte de la promesa de privacidad.
+    </aside>
+  </section>
+
+  <!-- 9 · Casos de uso -->
+  <section>
+    <h2>Dónde duele hoy, y donde encaja</h2>
+    <div class="row">
+      <div class="card"><h3>Freelancers &amp; pymes</h3><p>Contratos, facturas, datos de clientes.</p></div>
+      <div class="card"><h3>Salud y derecho</h3><p>Expedientes e información bajo obligaciones de confidencialidad.</p></div>
+      <div class="card"><h3>Equipos</h3><p>Carpetas cifradas por área en discos compartidos.</p></div>
+    </div>
+    <p class="muted" style="margin-top:0.8em">También: respaldos locales de contraseñas y copias de seguridad sensibles</p>
+    <aside class="notes">
+      Tres perfiles iniciales: profesionales que manejan documentos confidenciales (salud, derecho,
+      finanzas), pymes que comparten equipos, y cualquier persona con respaldos que no quiere que
+      otros lean. El denominador común: datos que hoy están sin cifrar porque cifrarlos era un fastidio.
+    </aside>
+  </section>
+
+  <!-- 10 · Roadmap -->
+  <section>
+    <h2>Roadmap propuesto</h2>
+    <ul>
+      <li><b>Vaults compartidos</b> para equipos, con permisos por invitación</li>
+      <li><b>Vaults portátiles</b> en USB, exportación y registro de auditoría</li>
+      <li>Protección de carpetas de <b>sincronización</b> (OneDrive, Dropbox)</li>
+      <li>Despliegue y <b>onboarding</b> para empresas</li>
+    </ul>
+    <p class="muted" style="margin-top:0.6em">Supuestos a validar con clientes; hoy el foco es Windows.</p>
+    <aside class="notes">
+      Transparencia: esto es lo que proponemos, no lo construido. Compartir vaults con permisos es
+      el siguiente salto para equipos; la portabilidad en USB abre el uso "vault en el bolsillo";
+      y proteger carpetas de OneDrive/Dropbox resuelve el caso de respaldos en la nube sin perder
+      la privacidad. El foco actual es Windows de escritorio.
+    </aside>
+  </section>
+
+  <!-- 11 · Modelo de negocio -->
+  <section>
+    <h2>Modelo propuesto</h2>
+    <div class="row">
+      <div class="card"><h3>Personal · Gratis</h3><p>Vaults ilimitados en tu equipo.</p></div>
+      <div class="card"><h3>Pro · Licencia</h3><p>Portabilidad USB, auto-bloqueo avanzado, soporte.</p></div>
+      <div class="card"><h3>Empresa · Por asiento</h3><p>Despliegue centralizado, auditoría, onboarding.</p></div>
+    </div>
+    <p class="muted" style="margin-top:0.8em">Propuesta comercial por validar con el mercado.</p>
+    <aside class="notes">
+      Planteamos un embudo: personal gratis para generar hábito y boca a boca; Pro paga la operación;
+      Empresa paga la escala con despliegue y auditoría. Son números a validar: hoy estamos en fase
+      de producto y primeros usuarios.
+    </aside>
+  </section>
+
+  <!-- 12 · Cierre -->
+  <section>
+    <h1>Probalo en esta demo</h1>
+    <p class="lead" style="margin-top:0.6em">Un vault abierto, archivos usándose y todo cerrado desde el icono de la bandeja.</p>
+    <p style="margin-top:1.2em">
+      <span class="pill">Demo en vivo</span><span class="pill">Acceso anticipado</span><span class="pill">charla@securefolder</span>
+    </p>
+    <aside class="notes">
+      Gracias por llegar hasta acá. La forma más honesta de cerrar es mostrar: abramos Z:, veamos
+      los archivos funcionando, y cerremos el vault para que vean que en disco queda todo cifrado.
+      Listo para preguntas; y si querés acceso anticipado, te dejo el contacto.
+    </aside>
+  </section>
+
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: true,
+    transition: 'slide',
+    width: 1280,
+    height: 720
+  });
+</script>
+</body>
+</html>
