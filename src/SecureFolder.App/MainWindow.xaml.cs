@@ -90,6 +90,8 @@ public partial class MainWindow : Window
         if (ViewModel.IsCreateDialogOpen) ViewModel.CancelCreateCommand.Execute(null);
         if (ViewModel.IsUnlockDialogOpen) ViewModel.CancelUnlockCommand.Execute(null);
         if (ViewModel.IsChangePasswordDialogOpen) ViewModel.CancelChangePasswordCommand.Execute(null);
+        if (ViewModel.IsRenameDialogOpen) ViewModel.CancelRenameCommand.Execute(null);
+        if (ViewModel.IsDeleteConfirmationDialogOpen) ViewModel.CancelDeleteCommand.Execute(null);
     }
 
     // Password box bindings (PasswordBox doesn't support MVVM binding directly)

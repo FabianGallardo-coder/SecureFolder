@@ -387,16 +387,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void RemoveVault(VaultInfo vault)
+    private void RemoveVault()
     {
-        var result = _vaultManager.RemoveVault(vault.Id, DeletePhysicalFile);
+        if (SelectedVault is null) return;
+        var result = _vaultManager.RemoveVault(SelectedVault.Id, DeletePhysicalFile);
         if (result.IsSuccess)
         {
             IsDeleteConfirmationDialogOpen = false;
             RefreshVaultList();
             string msg = DeletePhysicalFile
-                ? $"Carpeta segura '{vault.Name}' eliminada definitivamente del disco."
-                : $"Carpeta segura '{vault.Name}' eliminada de la lista.";
+                ? $"Carpeta segura '{SelectedVault.Name}' eliminada definitivamente del disco."
+                : $"Carpeta segura '{SelectedVault.Name}' eliminada de la lista.";
             StatusMessage = msg;
         }
         else
