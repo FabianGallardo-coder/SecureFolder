@@ -319,6 +319,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         else
         {
+            // Vaciar la contraseña actual para que el reintento no concatene la anterior.
+            ChangePasswordCurrent = "";
             StatusMessage = result.Error ?? "No se pudo cambiar la contraseña.";
         }
     }

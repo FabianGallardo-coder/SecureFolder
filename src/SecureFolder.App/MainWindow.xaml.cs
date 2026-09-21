@@ -41,6 +41,14 @@ public partial class MainWindow : Window
             case nameof(MainViewModel.UnlockPassword) when string.IsNullOrEmpty(ViewModel.UnlockPassword):
                 UnlockPasswordBox.Clear();
                 break;
+            case nameof(MainViewModel.IsChangePasswordDialogOpen) when ViewModel.IsChangePasswordDialogOpen:
+                CurrentPasswordBox.Clear();
+                NewPasswordBox.Clear();
+                NewPasswordConfirmBox.Clear();
+                break;
+            case nameof(MainViewModel.ChangePasswordCurrent) when string.IsNullOrEmpty(ViewModel.ChangePasswordCurrent):
+                CurrentPasswordBox.Clear();
+                break;
         }
     }
 
@@ -117,16 +125,39 @@ public partial class MainWindow : Window
 
     private void VaultOptionsButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button button && button.DataContext is VaultInfo vault)
+        if (sender is not Button button || button.DataContext is not VaultInfo vault) return;
+
+        // Renombrar, cambiar contraseña y eliminar requieren que la carpeta esté
+        // bloqueada; con la carpeta montada el Core rechaza esas operaciones.
+        if (vault.IsUnlocked)
         {
-            if (vault.IsUnlocked)
-            {
-                ViewModel.ShowChangePasswordDialogCommand.Execute(vault);
-            }
-            else
-            {
-                ViewModel.ShowRenameDialogCommand.Execute(vault);
-            }
+            ViewModel.StatusMessage = "Bloqueá la carpeta segura para renombrarla, cambiar su contraseña o eliminarla.";
+            return;
         }
+
+        var menu = button.ContextMenu;
+        if (menu is null) return;
+        menu.PlacementTarget = button;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.DataContext = vault;
+        menu.IsOpen = true;
+    }
+
+    private void OptionsRename_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: VaultInfo vault })
+            ViewModel.ShowRenameDialogCommand.Execute(vault);
+    }
+
+    private void OptionsChangePassword_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: VaultInfo vault })
+            ViewModel.ShowChangePasswordDialogCommand.Execute(vault);
+    }
+
+    private void OptionsDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: VaultInfo vault })
+            ViewModel.ShowDeleteConfirmationCommand.Execute(vault);
     }
 }

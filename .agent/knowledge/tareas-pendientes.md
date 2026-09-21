@@ -20,20 +20,20 @@ siguientes ciclos de trabajo.
    el override `Mounted` → el mount se desmontaba solo a los ~10-12 s. Repro E2E físico sobre build
    dev **PASS** (`e2e-full.ps1`, 2026-09-21). Ver [first-unlock-flaky](./first-unlock-flaky.md).
 
-### Funcionalidad sin cablear
-3. **"Cambiar contraseña" y "Eliminar vault" sin botón en la UI** — la lógica existe en
-   `VaultManager`/`VaultFormat` (`ChangePasswordAsync`), falta el flujo en la UI.
-   Prioridad media.
-
 ### Verificación pendiente
-4. **QA E2E sobre la app instalada** — el instalador `release\SecureFolderSetup.exe` (45,5 MB,
+3. **QA E2E sobre la app instalada** — el instalador `release\SecureFolderSetup.exe` (45,5 MB,
    2026-09-21) se regeneró con los binaries corregidos + WinFsp MSI; falta el repro físico en
    máquina con escritorio (requiere UAC + UI interactiva). El flujo completo ya pasa sobre el build
    dev vía `e2e-full.ps1` (steps 1–9 PASS).
-5. **"Bloquear todas"** — `CountToVisibleConverter` arreglado; verificar visualmente con vars
+4. **"Bloquear todas"** — `CountToVisibleConverter` arreglado; verificar visualmente con vars
    vaults al mismo tiempo en el build final.
 
 ## Completado (2026-09-21)
+- **Menú `⚙` de la tarjeta y "Cambiar contraseña"** → FIJADO: el `⚙` ofrecía "Cambiar contraseña"
+  con el vault **desbloqueado**, pero el Core lo exige **bloqueado** (`VaultManager`); además
+  faltaba el overlay XAML (diálogo invisible) y "Eliminar" no tenía disparador. Ahora `⚙` abre un
+  `ContextMenu` (Renombrar / Cambiar contraseña / Eliminar) solo con el vault bloqueado.
+  QA UIA PASS. Ver [menu-opciones-cambiar-contrasena](./menu-opciones-cambiar-contrasena.md).
 - **Clic en tarjeta de vault desbloqueado no abría la carpeta** → FIJADO: `ShellExecute` sobre la
   raíz de la unidad WinFsp no abre ventana; ahora se lanza `explorer.exe "{letra}:\"`. QA físico
   PASS. Ver [clic-tarjeta-no-abre-carpeta](./clic-tarjeta-no-abre-carpeta.md).

@@ -191,7 +191,19 @@
                                                 ToolTip="Opciones"
                                                 Click="VaultOptionsButton_Click"
                                                 Tag="{Binding}"
-                                                Margin="8,0,0,0"/>
+                                                Margin="8,0,0,0">
+                                            <Button.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Renombrar"
+                                                              Click="OptionsRename_Click"/>
+                                                    <MenuItem Header="Cambiar contraseña"
+                                                              Click="OptionsChangePassword_Click"/>
+                                                    <Separator/>
+                                                    <MenuItem Header="Eliminar carpeta segura"
+                                                              Click="OptionsDelete_Click"/>
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                        </Button>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -302,6 +314,49 @@
                                 Content="Desbloquear"/>
                         <Button Style="{StaticResource SecondaryButton}"
                                 Command="{Binding CancelUnlockCommand}"
+                                Content="Cancelar" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Change Password Dialog Overlay -->
+        <Border Style="{StaticResource OverlayBorder}"
+                Visibility="{Binding IsChangePasswordDialogOpen, Converter={StaticResource BoolToVisibleConverter}}"
+                MouseLeftButtonDown="Overlay_Click">
+            <Border Background="#1a1a2e" CornerRadius="12"
+                    Width="380" Padding="24"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Cambiar contraseña"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="#e94560" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Contraseña actual" Foreground="#888" Margin="0,0,0,4"/>
+                    <PasswordBox x:Name="CurrentPasswordBox"
+                                 Style="{StaticResource PasswordBox}"
+                                 PasswordChanged="CurrentPassword_Changed"/>
+
+                    <TextBlock Text="Nueva contraseña" Foreground="#888" Margin="0,12,0,4"/>
+                    <PasswordBox x:Name="NewPasswordBox"
+                                 Style="{StaticResource PasswordBox}"
+                                 PasswordChanged="NewPassword_Changed"/>
+
+                    <TextBlock Text="Confirmar nueva contraseña" Foreground="#888" Margin="0,12,0,4"/>
+                    <PasswordBox x:Name="NewPasswordConfirmBox"
+                                 Style="{StaticResource PasswordBox}"
+                                 PasswordChanged="NewPasswordConfirm_Changed"/>
+
+                    <TextBlock Text="⚠ Si olvidás la contraseña, los datos cifrados pueden ser irrecuperables."
+                               FontSize="11" Foreground="#e94560"
+                               TextWrapping="Wrap" Margin="0,12,0,0"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                        <Button Style="{StaticResource PrimaryButton}"
+                                Command="{Binding ChangePasswordCommand}"
+                                Content="Cambiar"/>
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Command="{Binding CancelChangePasswordCommand}"
                                 Content="Cancelar" Margin="8,0,0,0"/>
                     </StackPanel>
                 </StackPanel>
