@@ -26,9 +26,9 @@ siguientes ciclos de trabajo.
    `release\SecureFolderSetup.exe` en máquina con escritorio (requiere UAC + UI interactiva).
 4. **"Bloquear todas"** — `CountToVisibleConverter` arreglado; verificar visualmente con vars
    vaults al mismo tiempo en el build final.
-5. **Regenerar artefactos Release con el fix de `RemoveVault`** (2026-09-21) — `release\app` +
-   `release\SecureFolderSetup.exe` (13:01–13:02) se publicaron antes de corregir el crash de
-   "Eliminar"; tras regenerar, actualizar los hashes en `docs/qa-report.md` (sección 6).
+5. ~~**Regenerar artefactos Release con el fix de `RemoveVault`**~~ — **HECHO** el 2026-09-21 17:09–
+   17:10 (`build.ps1`): `release\app` 141,2 MB + `release\SecureFolderSetup.exe` 45,5 MB. Hashes
+   actualizados en `docs/qa-report.md` (sección 6).
 
 ## Completado (2026-09-21)
 - **Code review del ciclo (menú ⚙) encontró un crash en "Eliminar"** → `RemoveVault` recibía `null`

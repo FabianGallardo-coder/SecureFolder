@@ -74,8 +74,7 @@ Este documento describe el plan de pruebas ejecutado para validar la estabilidad
 - Desbloqueo + abrir carpeta desde el binario publicado, app NO elevada — PASS.
 
 **Todavía pendiente (requiere UAC + sesión interactiva):**
-- Instalar `release\SecureFolderSetup.exe` y repetir el ciclo completo sobre la app **instalada**.
-- Regenerar `release\app` + instalador con el fix de `RemoveVault` (ver sección 6) y actualizar los hashes.
+- Instalar el `release\SecureFolderSetup.exe` regenerado (2026-09-21 17:10) y repetir el ciclo completo sobre la app **instalada**.
 
 ## 6. Ciclo QA UI (menú ⚙) y code review (2026-09-21)
 
@@ -99,14 +98,11 @@ Este documento describe el plan de pruebas ejecutado para validar la estabilidad
 - Pendientes menores (info): tests UI no versionados (solo `%TEMP%`), desuscripción de
   `PropertyChanged` en `MainWindow`, contraste del banner de elevación bajo WCAG AA (≈3.4:1 a 11px).
 
-**Artefactos Release del ciclo (2026-09-21 13:01–13:02):**
-
-> Nota: **no incluyen** el fix de `RemoveVault` (2026-09-21); se regeneran en el próximo ciclo y se
-> actualizan los hashes de esta tabla.
+**Artefactos Release (regenerados 2026-09-21 17:09–17:10 con el fix de `RemoveVault` via `build.ps1`):**
 
 | Archivo | Tamaño | Fecha | SHA-256 |
 |---|---|---|---|
-| `release\app\SecureFolder.App.exe` | 0,41 MB | 2026-09-21 13:01 | `93743465E2D17D36A7FF2CD3970809B808D5B43036F92CB1B2E69530B1089044` |
-| `release\app\SecureFolder.Core.dll` | 0,06 MB | 2026-09-21 13:01 | `444BEB1C897DE481306E0767201F62197B65E7DBCD055FDDB6AD47360B024E0B` |
-| `release\SecureFolderSetup.exe` | 47,7 MB | 2026-09-21 13:02 | `7E8B9AFF9B247E31B99F186CBEEC33B37979F4C19CC87E6EEAFDB7D816A5D495` |
+| `release\app\SecureFolder.App.exe` | 0,41 MB | 2026-09-21 17:09 | `9B7A6E9537C931CC0235CA8FD6D0C43437A885FEAB6ABAD1E22857867AA4D5F4` |
+| `release\app\SecureFolder.Core.dll` | 0,06 MB | 2026-09-21 17:09 | `3E54E2EE878A4FCBEE659EFA59AD8A9FD72D017C96B259B89CB76497E6B4D90D` |
+| `release\SecureFolderSetup.exe` | 45,5 MB | 2026-09-21 17:10 | `3B65EA2F73920C03C9EAECB0C7A34B0E25A01EC42A6BD8BAB9A32274E6E5B62B` |
 | `installer\vendor\winfsp-2.2.26215.msi` | 2,11 MB | 2026-09-17 10:34 | `2ECB5C89405488A95BBD8A01875E02C48534FD37BBDFD84488F7590464D65944` |
