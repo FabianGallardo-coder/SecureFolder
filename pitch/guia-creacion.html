@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Guía paso a paso de SecureFolder: cómo crear tu carpeta segura y cómo se construyó la app.">
+<title>SecureFolder — Guía paso a paso</title>
+<style>
+  :root {
+    --sf-bg: #1a1a2e;
+    --sf-bg2: #16213e;
+    --sf-accent: #f0526d;
+    --sf-fg: #eee;
+    --sf-muted: #c3c7d4;
+    --sf-ok: #4ade80;
+    --sf-card: rgba(255,255,255,0.045);
+    --sf-line: rgba(255,255,255,0.10);
+    --font: "Segoe UI", "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    font-size: clamp(16px, 0.95rem + 0.3vw, 19px);
+    line-height: 1.55;
+    color: var(--sf-fg);
+    background: radial-gradient(1200px 700px at 50% -10%, #27264b 0%, var(--sf-bg2) 45%, var(--sf-bg) 100%);
+    background-attachment: fixed;
+  }
+  ::selection { background: rgba(240,82,109,0.45); }
+  a { color: var(--sf-accent); }
+  a:focus-visible, summary:focus-visible, .btn:focus-visible {
+    outline: 2px solid var(--sf-accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  .sr {
+    position: absolute; width: 1px; height: 1px;
+    margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .skip {
+    position: absolute; left: 1rem; top: -3rem; z-index: 60;
+    background: var(--sf-accent); color: #fff; padding: .5em 1em;
+    border-radius: 0 0 8px 8px; text-decoration: none; transition: top .15s;
+  }
+  .skip:focus { top: 0; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding: .65rem clamp(.9rem, 3vw, 1.6rem);
+    background: rgba(22,33,62,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--sf-line);
+  }
+  .topbar .brand {
+    display: flex; align-items: center; gap: .55rem;
+    color: var(--sf-fg); text-decoration: none; font-weight: 700; font-size: .95rem;
+  }
+  .topbar .brand img { width: 26px; height: 26px; border-radius: 7px; display: block; }
+  .chips { display: flex; gap: .5rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .chips a {
+    flex: none; font-size: .8rem; text-decoration: none; color: var(--sf-muted);
+    border: 1px solid var(--sf-line); border-radius: 999px; padding: .3em .9em;
+    white-space: nowrap; transition: color .15s, border-color .15s;
+  }
+  .chips a:hover { color: var(--sf-fg); border-color: var(--sf-accent); }
+  #bar {
+    position: absolute; left: 0; bottom: -1px; width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--sf-accent), #ff8aa0);
+    transform: scaleX(0); transform-origin: left center;
+  }
+
+  .hero {
+    min-height: min(86vh, 760px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: clamp(2.5rem, 8vh, 5rem) clamp(1rem, 4vw, 2rem);
+  }
+  .hero .logo {
+    width: clamp(96px, 18vw, 132px); height: auto; border-radius: 24%;
+    box-shadow: 0 18px 50px rgba(240,82,109,0.35);
+    margin-bottom: 1.4rem;
+  }
+  .hero h1 {
+    margin: 0; font-size: clamp(2rem, 1.2rem + 4vw, 3.4rem);
+    line-height: 1.1; letter-spacing: -0.02em;
+  }
+  .hero .lead {
+    margin: 1rem 0 0; max-width: 34em; color: var(--sf-muted);
+    font-size: clamp(1rem, 0.95rem + 0.5vw, 1.2rem);
+  }
+  .pills { margin-top: 1.6rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+  .pill {
+    font-size: .8rem; color: var(--sf-fg);
+    background: rgba(240,82,109,0.15); border: 1px solid rgba(240,82,109,0.5);
+    border-radius: 999px; padding: .35em 1em;
+  }
+  .scroll-hint {
+    margin-top: 2.4rem; color: var(--sf-muted); font-size: .85rem;
+    display: inline-flex; flex-direction: column; align-items: center; gap: .3rem;
+    text-decoration: none;
+  }
+  .scroll-hint .arrow { font-size: 1.3rem; animation: bob 1.8s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
+
+  .part {
+    margin: clamp(2.5rem, 8vh, 4.5rem) 0 clamp(1.5rem, 4vh, 2.5rem);
+    padding-top: clamp(1.5rem, 4vh, 2.5rem);
+    border-top: 1px solid var(--sf-line);
+  }
+  .part .kicker {
+    display: inline-block; font-size: .78rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--sf-accent); font-weight: 700;
+    background: rgba(240,82,109,0.12); border: 1px solid rgba(240,82,109,0.45);
+    border-radius: 999px; padding: .3em 1em; margin-bottom: .9rem;
+  }
+  .part h2 { margin: 0; font-size: clamp(1.6rem, 1.2rem + 2vw, 2.4rem); line-height: 1.15; }
+  .part p { margin: .6rem 0 0; color: var(--sf-muted); max-width: 40em; }
+
+  .step { margin: clamp(2.5rem, 7vh, 4rem) 0; }
+  .step-head { display: flex; align-items: baseline; gap: clamp(.7rem, 2vw, 1.2rem); }
+  .num {
+    font-size: clamp(2.1rem, 1.4rem + 2.5vw, 3.2rem);
+    font-weight: 800; color: var(--sf-accent); line-height: 1;
+    font-variant-numeric: tabular-nums; opacity: 0.92;
+  }
+  .step h2 { margin: 0; font-size: clamp(1.3rem, 1.05rem + 1.4vw, 1.85rem); line-height: 1.2; }
+  .accent { color: var(--sf-accent); }
+
+  .step-grid { display: grid; grid-template-columns: 1fr; gap: clamp(1.2rem, 3vw, 2rem); margin-top: 1.4rem; }
+  @media (min-width: 860px) {
+    .step-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    .step.flip .fig { order: -1; }
+  }
+  .col .lead { margin: 0 0 .8rem; color: #d7dae4; font-weight: 600; }
+  .col ul { margin: 0; padding-left: 1.15em; }
+  .col li { margin: .5em 0; color: var(--sf-fg); }
+  .col li::marker { color: var(--sf-accent); }
+  .col li b { color: var(--sf-fg); }
+  .col .hint {
+    display: block; margin-top: .9rem; font-size: .88rem; color: var(--sf-muted);
+    border-left: 3px solid rgba(240,82,109,0.55); padding: .35em 0 .35em .8em;
+  }
+
+  .fig {
+    margin: 0; background: var(--sf-card); border: 1px solid var(--sf-line);
+    border-radius: 16px; padding: clamp(.7rem, 2vw, 1rem); overflow: hidden;
+  }
+  .fig svg { display: block; width: 100%; height: auto; }
+  .fig figcaption {
+    margin-top: .65rem; color: var(--sf-muted); font-size: .84rem; text-align: center;
+  }
+
+  .code {
+    margin: 1rem 0 0; padding: .9rem 1rem;
+    background: #0f1424; border: 1px solid #2a3150; border-radius: 10px;
+    overflow-x: auto; font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: .86rem; line-height: 1.6; color: #e6e9f2;
+  }
+  .code .prompt { color: var(--sf-ok); user-select: none; }
+  .code .cmt { color: #7f88ad; }
+
+  .notes {
+    margin-top: 1.3rem; border-left: 3px solid var(--sf-accent);
+    background: rgba(240,82,109,0.08); border-radius: 0 10px 10px 0;
+    padding: .7rem 1rem; font-size: .92rem; color: #d7dae4;
+  }
+  .notes summary { cursor: pointer; color: var(--sf-accent); font-weight: 600; }
+  .notes p { margin: .55em 0 0; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: clamp(.7rem, 2vw, 1.1rem); margin-top: 1.4rem;
+  }
+  .stat {
+    background: var(--sf-card); border: 1px solid rgba(240,82,109,0.35);
+    border-radius: 14px; padding: 1rem; text-align: center;
+  }
+  .stat .count {
+    display: block; font-size: clamp(2rem, 1.5rem + 2vw, 2.7rem);
+    font-weight: 800; color: var(--sf-accent); line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .label { display: block; margin-top: .3rem; font-size: .85rem; color: var(--sf-muted); }
+
+  .cta-row { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.5rem; }
+  .btn {
+    display: inline-block; text-decoration: none; font-weight: 700;
+    background: var(--sf-accent); color: #fff;
+    padding: .8em 1.5em; border-radius: 999px; font-size: .95rem;
+    transition: filter .15s, transform .15s;
+  }
+  .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn.ghost { background: transparent; border: 1.5px solid rgba(240,82,109,0.7); color: var(--sf-fg); }
+
+  footer {
+    margin-top: clamp(3rem, 9vh, 5rem); padding: 2rem clamp(1rem, 4vw, 2rem) 3rem;
+    border-top: 1px solid var(--sf-line); text-align: center;
+    color: var(--sf-muted); font-size: .85rem;
+  }
+  footer a { color: var(--sf-muted); }
+
+  .anim-on .a-item { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#parte1">Saltar al contenido</a>
+
+<header class="topbar">
+  <a class="brand" href="#">
+    <img src="../src/SecureFolder.App/Assets/app.png" alt="">
+    <span>SecureFolder · Guía</span>
+  </a>
+  <nav class="chips" aria-label="Secciones">
+    <a href="#parte1">1 · Crear vaults</a>
+    <a href="#parte2">2 · Cómo se hizo</a>
+  </nav>
+  <span id="bar" aria-hidden="true"></span>
+</header>
+
+<section class="hero reveal" aria-labelledby="hero-h">
+  <img class="logo a-item" src="../src/SecureFolder.App/Assets/app.png" alt="Icono de SecureFolder: carpeta azul con candado dorado">
+  <h1 id="hero-h" class="a-item">Guía paso a paso de <span class="accent">SecureFolder</span></h1>
+  <p class="lead a-item">Dos recorridos en una sola guía: creá tu carpeta segura en minutos… y mirá cómo se construyó la app por dentro.</p>
+  <div class="pills a-item">
+    <span class="pill">Parte 1 · Uso</span>
+    <span class="pill">Parte 2 · Ingeniería</span>
+    <span class="pill">.NET 10</span>
+    <span class="pill">WinFsp</span>
+    <span class="pill">AES-256-GCM</span>
+  </div>
+  <a class="scroll-hint a-item" href="#parte1">
+    <span>Desplazá para avanzar</span>
+    <span class="arrow" aria-hidden="true">↓</span>
+  </a>
+</section>
+
+<main class="wrap">
+
+  <!-- ═══════════════ PARTE 1 ═══════════════ -->
+  <div class="part reveal" id="parte1">
+    <span class="kicker a-item">Parte 1 · Uso</span>
+    <h2 class="a-item">Cómo crear tu carpeta segura</h2>
+    <p class="a-item">Ocho pasos con la interfaz real: de cero a una unidad <b>Z:\</b> montada y protegida. Pensado para quien instala la app por primera vez.</p>
+  </div>
+
+  <!-- 01 -->
+  <section class="step reveal" aria-labelledby="s1-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">01</span>
+      <h2 id="s1-h"><span class="sr">Paso 1: </span>Abrí SecureFolder</h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">La lista de vaults arranca vacía: todo es local.</p>
+        <ul>
+          <li>Sin cuenta, sin nube, sin conexión a internet.</li>
+          <li>Cada carpeta segura será <b>un único archivo <code>.sfv</code></b>.</li>
+          <li>El punto de partida es el botón <b>Crear carpeta segura</b>.</li>
+        </ul>
+        <span class="hint">Si ya tenés vaults, aparecen como tarjetas con su estado (bloqueado / desbloqueado).</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 250" role="img" aria-label="Ventana principal de SecureFolder con lista vacía y botón Crear carpeta segura">
+          <rect x="1" y="1" width="398" height="248" rx="12" fill="#16213e" stroke="#2c3358" stroke-width="2"/>
+          <path d="M1 13 A12 12 0 0 1 13 1 H387 A12 12 0 0 1 399 13 V35 H1 Z" fill="#1f2744"/>
+          <circle cx="20" cy="18" r="5" fill="#ff5f57"/><circle cx="38" cy="18" r="5" fill="#febc2e"/><circle cx="56" cy="18" r="5" fill="#28c840"/>
+          <text x="200" y="23" text-anchor="middle" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">SecureFolder</text>
+          <rect x="16" y="50" width="368" height="112" rx="10" fill="none" stroke="#3a4166" stroke-width="2" stroke-dasharray="7 6"/>
+          <text x="200" y="100" text-anchor="middle" fill="#c3c7d4" font-size="15" font-family="Segoe UI,sans-serif">Todavía no tenés carpetas seguras</text>
+          <text x="200" y="124" text-anchor="middle" fill="#8890b0" font-size="13" font-family="Segoe UI,sans-serif">Creá la primera en segundos</text>
+          <rect x="98" y="182" width="204" height="44" rx="22" fill="#f0526d"/>
+          <text x="200" y="210" text-anchor="middle" fill="#fff" font-size="15" font-weight="700" font-family="Segoe UI,sans-serif">+  Crear carpeta segura</text>
+        </svg>
+        <figcaption>Ventana principal · lista vacía</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Abrir la app instalada en vivo. Decir que no hay registro ni nube: el archivo .sfv vive donde el usuario elija.</p>
+    </details>
+  </section>
+
+  <!-- 02 -->
+  <section class="step flip reveal" aria-labelledby="s2-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">02</span>
+      <h2 id="s2-h"><span class="sr">Paso 2: </span>Nombre y ubicación del <span class="accent">.sfv</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Dos campos y listo.</p>
+        <ul>
+          <li><b>Nombre</b>: cómo se llama el vault en la lista (ej. <em>Documentos</em>).</li>
+          <li><b>Ubicación</b>: carpeta donde se guarda el archivo <code>.sfv</code>.</li>
+          <li>Se genera <code>Documentos.sfv</code> — ahí vive todo el contenido cifrado.</li>
+        </ul>
+        <span class="hint">La ubicación NO es la letra de unidad: esa la asigna Windows recién al desbloquear.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 260" role="img" aria-label="Diálogo Crear carpeta segura con campos Nombre y Ubicación">
+          <rect x="1" y="1" width="398" height="258" rx="12" fill="#16213e" stroke="#2c3358" stroke-width="2"/>
+          <path d="M1 13 A12 12 0 0 1 13 1 H387 A12 12 0 0 1 399 13 V35 H1 Z" fill="#1f2744"/>
+          <circle cx="20" cy="18" r="5" fill="#ff5f57"/><circle cx="38" cy="18" r="5" fill="#febc2e"/><circle cx="56" cy="18" r="5" fill="#28c840"/>
+          <text x="200" y="23" text-anchor="middle" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Crear carpeta segura</text>
+          <text x="24" y="64" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Nombre</text>
+          <rect x="24" y="72" width="352" height="36" rx="8" fill="#0f1424" stroke="#3a4166"/>
+          <text x="38" y="95" fill="#eee" font-size="14" font-family="Segoe UI,sans-serif">Documentos</text>
+          <text x="24" y="134" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Ubicación (dónde se guarda el .sfv)</text>
+          <rect x="24" y="142" width="300" height="36" rx="8" fill="#0f1424" stroke="#3a4166"/>
+          <text x="38" y="165" fill="#eee" font-size="14" font-family="Segoe UI,sans-serif">…\Documents</text>
+          <rect x="332" y="142" width="44" height="36" rx="8" fill="#232b4d" stroke="#3a4166"/>
+          <text x="354" y="165" text-anchor="middle" fill="#c3c7d4" font-size="14" font-family="Segoe UI,sans-serif">…</text>
+          <text x="24" y="204" fill="#8890b0" font-size="12" font-family="Segoe UI,sans-serif">Se guardará Documentos.sfv</text>
+          <rect x="176" y="216" width="96" height="32" rx="16" fill="none" stroke="#3a4166"/>
+          <text x="224" y="237" text-anchor="middle" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Cancelar</text>
+          <rect x="282" y="216" width="94" height="32" rx="16" fill="#f0526d"/>
+          <text x="329" y="237" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="Segoe UI,sans-serif">Crear</text>
+        </svg>
+        <figcaption>Diálogo de creación · nombre + ubicación</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Errore común de usuarios: confundir "Ubicación" con la letra de unidad montada. Aclararlo acá, antes del desbloqueo.</p>
+    </details>
+  </section>
+
+  <!-- 03 -->
+  <section class="step reveal" aria-labelledby="s3-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">03</span>
+      <h2 id="s3-h"><span class="sr">Paso 3: </span>Definí tu <span class="accent">contraseña</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">La única llave de la caja fuerte.</p>
+        <ul>
+          <li><b>Mínimo 8 caracteres</b> — validado por la app.</li>
+          <li>No se guarda en ningún lado: se convierte en clave con <b>Argon2id</b>.</li>
+          <li>Cambiás la contraseña cuando quieras, sin re-cifrar los datos.</li>
+        </ul>
+        <span class="hint">Si la olvidás no hay recuperación. Eso significa que el cifrado es real.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 230" role="img" aria-label="Diálogo de contraseña con campo de ocho caracteres y mínimo indicado">
+          <rect x="1" y="1" width="398" height="228" rx="12" fill="#16213e" stroke="#2c3358" stroke-width="2"/>
+          <path d="M1 13 A12 12 0 0 1 13 1 H387 A12 12 0 0 1 399 13 V35 H1 Z" fill="#1f2744"/>
+          <circle cx="20" cy="18" r="5" fill="#ff5f57"/><circle cx="38" cy="18" r="5" fill="#febc2e"/><circle cx="56" cy="18" r="5" fill="#28c840"/>
+          <text x="200" y="23" text-anchor="middle" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Contraseña</text>
+          <text x="24" y="62" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Contraseña para «Documentos»</text>
+          <rect x="24" y="72" width="352" height="40" rx="8" fill="#0f1424" stroke="#3a4166"/>
+          <text x="40" y="99" fill="#eee" font-size="18" letter-spacing="3" font-family="Segoe UI,sans-serif">••••••••</text>
+          <rect x="24" y="124" width="150" height="24" rx="12" fill="rgba(74,222,128,0.15)" stroke="rgba(74,222,128,0.55)"/>
+          <text x="99" y="141" text-anchor="middle" fill="#4ade80" font-size="12" font-family="Segoe UI,sans-serif">8 caracteres ✓</text>
+          <text x="190" y="141" fill="#8890b0" font-size="12" font-family="Segoe UI,sans-serif">Argon2id · nunca se guarda</text>
+          <rect x="176" y="178" width="96" height="34" rx="17" fill="none" stroke="#3a4166"/>
+          <text x="224" y="200" text-anchor="middle" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Cancelar</text>
+          <rect x="282" y="178" width="94" height="34" rx="17" fill="#f0526d"/>
+          <text x="329" y="200" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="Segoe UI,sans-serif">Crear</text>
+        </svg>
+        <figcaption>Campo de contraseña · validación en vivo</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Escribí la contraseña en vivo. Resaltar que se deriva en memoria y no queda en el vaults.json ni en logs.</p>
+    </details>
+  </section>
+
+  <!-- 04 -->
+  <section class="step flip reveal" aria-labelledby="s4-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">04</span>
+      <h2 id="s4-h"><span class="sr">Paso 4: </span>El vault aparece <span class="accent">bloqueado</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Tarjeta en la lista, candado cerrado.</p>
+        <ul>
+          <li>Estado inicial: <b>Bloqueado</b> — ningún dato legible.</li>
+          <li>Podés crear <b>varios vaults</b> y alternar entre ellos.</li>
+          <li>Cada tarjeta muestra nombre y ruta del <code>.sfv</code>.</li>
+        </ul>
+        <span class="hint">Todavía no hay unidad montada: Windows no ve nada.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 140" role="img" aria-label="Tarjeta de vault bloqueado con botón Desbloquear">
+          <rect x="1" y="18" width="398" height="104" rx="14" fill="#16213e" stroke="rgba(240,82,109,0.5)" stroke-width="2"/>
+          <rect x="22" y="44" width="46" height="38" rx="8" fill="#23355c"/>
+          <path d="M30 56 h14 v-4 a7 7 0 0 1 14 0 v4 h2 v18 H30 Z" fill="none" stroke="#f0526d" stroke-width="2.5" transform="translate(-2,6) scale(0.85)"/>
+          <text x="86" y="58" fill="#eee" font-size="16" font-weight="700" font-family="Segoe UI,sans-serif">Documentos</text>
+          <text x="86" y="80" fill="#8890b0" font-size="12" font-family="Segoe UI,sans-serif">Documents\Documentos.sfv</text>
+          <rect x="86" y="90" width="96" height="22" rx="11" fill="rgba(240,82,109,0.16)" stroke="rgba(240,82,109,0.55)"/>
+          <text x="134" y="105" text-anchor="middle" fill="#f0526d" font-size="12" font-family="Segoe UI,sans-serif">● Bloqueado</text>
+          <rect x="286" y="52" width="94" height="36" rx="18" fill="#f0526d"/>
+          <text x="333" y="75" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="Segoe UI,sans-serif">Desbloquear</text>
+          <text x="378" y="40" text-anchor="end" fill="#c3c7d4" font-size="16" font-family="Segoe UI,sans-serif">⚙</text>
+        </svg>
+        <figcaption>Tarjeta bloqueada · sin unidad aún</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>El menú ⚙ solo aparece en vaults bloqueados: renombrar, cambiar contraseña y eliminar viven ahí.</p>
+    </details>
+  </section>
+
+  <!-- 05 -->
+  <section class="step reveal" aria-labelledby="s5-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">05</span>
+      <h2 id="s5-h"><span class="sr">Paso 5: </span>Desbloqueá: nace la unidad <span class="accent">Z:\</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">El momento mágico: el vault se monta como volumen real.</p>
+        <ul>
+          <li>Escribís la contraseña → la app <b>monta el volumen</b>.</li>
+          <li>Windows asigna la primera letra libre: <b>Z:</b> si está disponible (después Y, X, W, V…).</li>
+          <li>El primer desbloqueo tarda ~1–2 s: se crea el volumen WinFsp.</li>
+          <li>La tarjeta pasa a <b>Desbloqueado</b> y muestra la letra.</li>
+        </ul>
+        <span class="hint">Todo ocurre en tu PC: el driver de WinFsp queda entre la app y Windows.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 250" role="img" aria-label="Tarjeta desbloqueada con distintivo de unidad Z y estado Desbloqueado">
+          <rect x="1" y="1" width="398" height="130" rx="14" fill="#16213e" stroke="rgba(74,222,128,0.5)" stroke-width="2"/>
+          <rect x="22" y="26" width="46" height="38" rx="8" fill="#1d4031"/>
+          <path d="M32 44 h10 v-5 a6 6 0 0 1 12 0 v5 h2 v16 H32 Z" fill="none" stroke="#4ade80" stroke-width="2.5"/>
+          <text x="86" y="42" fill="#eee" font-size="16" font-weight="700" font-family="Segoe UI,sans-serif">Documentos</text>
+          <text x="86" y="64" fill="#8890b0" font-size="12" font-family="Segoe UI,sans-serif">Documents\Documentos.sfv</text>
+          <rect x="86" y="76" width="120" height="24" rx="12" fill="rgba(74,222,128,0.15)" stroke="rgba(74,222,128,0.55)"/>
+          <text x="146" y="93" text-anchor="middle" fill="#4ade80" font-size="12" font-family="Segoe UI,sans-serif">✓ Desbloqueado</text>
+          <rect x="216" y="76" width="52" height="24" rx="12" fill="#f0526d"/>
+          <text x="242" y="93" text-anchor="middle" fill="#fff" font-size="13" font-weight="800" font-family="Segoe UI,sans-serif">Z:</text>
+          <text x="378" y="34" text-anchor="end" fill="#8890b0" font-size="16" font-family="Segoe UI,sans-serif">⚙</text>
+          <path class="draw" d="M200 148 V178" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path class="draw" d="M192 170 L200 180 L208 170" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="60" y="192" width="280" height="44" rx="10" fill="#0f1424" stroke="#3a4166"/>
+          <rect x="76" y="204" width="36" height="20" rx="4" fill="#23355c"/>
+          <text x="94" y="218" text-anchor="middle" fill="#f0526d" font-size="12" font-weight="700" font-family="Segoe UI,sans-serif">Z:</text>
+          <text x="126" y="220" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Disco local listo en Windows</text>
+        </svg>
+        <figcaption>Volumen montado · la carpeta es una unidad</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Abrir Este equipo en vivo y mostrar Z: apareciendo. Si Z: está ocupada, la app usa la siguiente letra del pool.</p>
+    </details>
+  </section>
+
+  <!-- 06 -->
+  <section class="step flip reveal" aria-labelledby="s6-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">06</span>
+      <h2 id="s6-h"><span class="sr">Paso 6: </span>Trabajá como con <span class="accent">cualquier carpeta</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Cero curva de aprendizaje: si sabés usar Explorer, ya sabés usar SecureFolder.</p>
+        <ul>
+          <li>Cualquier app sirve: Explorer, Office, editores, terminales.</li>
+          <li>Clic en la tarjeta desbloqueada → <b>abre Explorer en Z:\</b>.</li>
+          <li>Guardar en Z:\ cifra y autentica al momento (chunks de 64&nbsp;KB).</li>
+          <li>Leer descifra al vuelo: no hay copias temporales en claro.</li>
+        </ul>
+        <span class="hint">Sin duplicados ni "re-cifrados" manuales: todo es transparente.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 260" role="img" aria-label="Explorador de archivos mostrando la unidad Z con archivos cifrados">
+          <rect x="1" y="1" width="398" height="258" rx="12" fill="#16213e" stroke="#2c3358" stroke-width="2"/>
+          <path d="M1 13 A12 12 0 0 1 13 1 H387 A12 12 0 0 1 399 13 V35 H1 Z" fill="#1f2744"/>
+          <circle cx="20" cy="18" r="5" fill="#ff5f57"/><circle cx="38" cy="18" r="5" fill="#febc2e"/><circle cx="56" cy="18" r="5" fill="#28c840"/>
+          <text x="200" y="23" text-anchor="middle" fill="#c3c7d4" font-size="13" font-family="Segoe UI,sans-serif">Explorador de archivos</text>
+          <rect x="16" y="46" width="368" height="34" rx="8" fill="#0f1424" stroke="#3a4166"/>
+          <rect x="26" y="55" width="34" height="16" rx="4" fill="#23355c"/>
+          <text x="43" y="67" text-anchor="middle" fill="#f0526d" font-size="11" font-weight="700" font-family="Segoe UI,sans-serif">Z:</text>
+          <text x="72" y="68" fill="#eee" font-size="13" font-family="Segoe UI,sans-serif">Z:\</text>
+          <g font-family="Segoe UI,sans-serif">
+            <rect x="16" y="94" width="368" height="40" rx="8" fill="rgba(255,255,255,0.04)"/>
+            <rect x="28" y="104" width="22" height="20" rx="3" fill="#f0526d" opacity="0.75"/>
+            <text x="62" y="113" fill="#eee" font-size="14">contrato.pdf</text>
+            <text x="62" y="128" fill="#8890b0" font-size="11">128 KB · cifrado al escribir</text>
+            <rect x="16" y="142" width="368" height="40" rx="8" fill="rgba(255,255,255,0.04)"/>
+            <rect x="28" y="152" width="22" height="20" rx="3" fill="#4ade80" opacity="0.75"/>
+            <text x="62" y="161" fill="#eee" font-size="14">facturas.xlsx</text>
+            <text x="62" y="176" fill="#8890b0" font-size="11">64 KB · AES-256-GCM</text>
+            <rect x="16" y="190" width="368" height="40" rx="8" fill="rgba(255,255,255,0.04)"/>
+            <rect x="28" y="200" width="22" height="20" rx="3" fill="#5b8cff" opacity="0.75"/>
+            <text x="62" y="209" fill="#eee" font-size="14">notas.txt</text>
+            <text x="62" y="224" fill="#8890b0" font-size="11">4 KB · solo vos podés verla</text>
+          </g>
+          <text x="370" y="252" text-anchor="end" fill="#8890b0" font-size="11" font-family="Segoe UI,sans-serif">3 archivos · Z:\</text>
+        </svg>
+        <figcaption>Explorer sobre Z:\ · archivos normales, por dentro cifrados</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Abrir Word o el bloc y guardar un archivo en Z:. Mostrar que no hay carpeta "cifrada" visible: el usuario solo ve su unidad.</p>
+    </details>
+  </section>
+
+  <!-- 07 -->
+  <section class="step reveal" aria-labelledby="s7-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">07</span>
+      <h2 id="s7-h"><span class="sr">Paso 7: </span>Bloqueá: <span class="accent">Z:\ desaparece</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Cerrar la caja fuerte toma un clic.</p>
+        <ul>
+          <li>Botón <b>Bloquear</b> en la tarjeta (o <b>Bloquear todas</b> arriba).</li>
+          <li>La unidad Z:\ se desmonta al instante: Explorer la pierde.</li>
+          <li><b>Auto-bloqueo</b> por tiempo inactivo y al apagar la PC.</li>
+          <li>En disco solo queda el <code>.sfv</code> cifrado.</li>
+        </ul>
+        <span class="hint">Si alguien copia tu .sfv, necesita tu contraseña: Argon2id hace el trabajo pesado.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 230" role="img" aria-label="Tarjeta bloqueada de nuevo con aviso de auto-bloqueo en la bandeja del sistema">
+          <rect x="1" y="10" width="398" height="104" rx="14" fill="#16213e" stroke="rgba(240,82,109,0.5)" stroke-width="2"/>
+          <rect x="22" y="36" width="46" height="38" rx="8" fill="#23355c"/>
+          <path d="M30 48 h14 v-4 a7 7 0 0 1 14 0 v4 h2 v18 H30 Z" fill="none" stroke="#f0526d" stroke-width="2.5" transform="translate(-2,6) scale(0.85)"/>
+          <text x="86" y="50" fill="#eee" font-size="16" font-weight="700" font-family="Segoe UI,sans-serif">Documentos</text>
+          <rect x="86" y="64" width="96" height="22" rx="11" fill="rgba(240,82,109,0.16)" stroke="rgba(240,82,109,0.55)"/>
+          <text x="134" y="79" text-anchor="middle" fill="#f0526d" font-size="12" font-family="Segoe UI,sans-serif">● Bloqueado</text>
+          <g font-family="Segoe UI,sans-serif">
+            <line x1="216" y1="46" x2="330" y2="90" stroke="#8890b0" stroke-width="2.5"/>
+            <text x="340" y="52" fill="#8890b0" font-size="15">Z:\</text>
+            <text x="340" y="74" fill="#5b6488" font-size="12">desmontada</text>
+          </g>
+          <path class="draw" d="M200 128 V152" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <rect x="70" y="164" width="260" height="50" rx="12" fill="#0f1424" stroke="#3a4166"/>
+          <circle cx="96" cy="189" r="10" fill="none" stroke="#f0526d" stroke-width="2.5"/>
+          <path d="M92 189 l3 3 l6 -7" stroke="#f0526d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <text x="118" y="185" fill="#eee" font-size="13" font-weight="600" font-family="Segoe UI,sans-serif">SecureFolder en bandeja</text>
+          <text x="118" y="202" fill="#8890b0" font-size="12" font-family="Segoe UI,sans-serif">Auto-bloqueo en 4:57</text>
+        </svg>
+        <figcaption>Bloqueo manual o automático · la unidad deja de existir</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Bloquear con Explorer abierto en Z: y mostrar cómo la ventana queda inservible. Eso demuestra que no hay copia en claro.</p>
+    </details>
+  </section>
+
+  <!-- 08 -->
+  <section class="step flip reveal" aria-labelledby="s8-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">08</span>
+      <h2 id="s8-h"><span class="sr">Paso 8: </span>Gestión: renombrar, cambiar clave, <span class="accent">eliminar</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">El menú ⚙ de la tarjeta (solo cuando está bloqueada).</p>
+        <ul>
+          <li><b>Renombrar</b>: cambia el nombre en la lista, no el archivo.</li>
+          <li><b>Cambiar contraseña</b>: re-envuelve la clave maestra — <b>no re-cifra</b> tus datos.</li>
+          <li><b>Eliminar</b>: pide confirmación; decidís si borrás también el <code>.sfv</code>.</li>
+        </ul>
+        <span class="hint">Para cambiar contraseña o eliminar, bloqueá primero: es a propósito.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 400 220" role="img" aria-label="Menú de opciones de la tarjeta con Renombrar, Cambiar contraseña y Eliminar">
+          <rect x="1" y="6" width="398" height="78" rx="14" fill="#16213e" stroke="rgba(240,82,109,0.5)" stroke-width="2"/>
+          <text x="24" y="40" fill="#eee" font-size="16" font-weight="700" font-family="Segoe UI,sans-serif">Documentos</text>
+          <rect x="24" y="52" width="96" height="20" rx="10" fill="rgba(240,82,109,0.16)" stroke="rgba(240,82,109,0.55)"/>
+          <text x="72" y="66" text-anchor="middle" fill="#f0526d" font-size="11" font-family="Segoe UI,sans-serif">● Bloqueado</text>
+          <text x="368" y="42" text-anchor="end" fill="#f0526d" font-size="18" font-family="Segoe UI,sans-serif">⚙</text>
+          <rect x="228" y="56" width="160" height="132" rx="10" fill="#0f1424" stroke="#3a4166" stroke-width="2"/>
+          <g font-family="Segoe UI,sans-serif" font-size="14">
+            <text x="248" y="88" fill="#eee">✎  Renombrar</text>
+            <line x1="240" y1="104" x2="376" y2="104" stroke="#2a3150"/>
+            <text x="248" y="130" fill="#eee">🔑  Cambiar contraseña</text>
+            <line x1="240" y1="146" x2="376" y2="146" stroke="#2a3150"/>
+            <text x="248" y="172" fill="#ff7a8f">🗑  Eliminar…</text>
+          </g>
+          <path class="draw" d="M360 48 L360 60" stroke="#f0526d" stroke-width="2.5" fill="none"/>
+        </svg>
+        <figcaption>Overlay contextual ⚙ de la tarjeta</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Mostrar "Cambiar contraseña" como diferencial: en la mayoría de las soluciones re-cifrar todo tarda horas; acá es instantáneo.</p>
+    </details>
+  </section>
+
+  <!-- ═══════════════ PARTE 2 ═══════════════ -->
+  <div class="part reveal" id="parte2">
+    <span class="kicker a-item">Parte 2 · Ingeniería</span>
+    <h2 class="a-item">Cómo se construyó la app</h2>
+    <p class="a-item">Siete pasos para quien pregunta qué hay detrás: stack, formato, cripto, WinFsp, pruebas, bugs reales y distribución.</p>
+  </div>
+
+  <!-- 09 -->
+  <section class="step reveal" aria-labelledby="s9-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">09</span>
+      <h2 id="s9-h"><span class="sr">Paso 9: </span>Arquitectura en <span class="accent">tres proyectos</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">UI, motor y pruebas separadas desde el día uno.</p>
+        <ul>
+          <li><b>SecureFolder.App</b>: WPF .NET 10, patrón MVVM, ventanas y tarjetas.</li>
+          <li><b>SecureFolder.Core</b>: cripto y filesystem cifrado, sin dependencia de UI.</li>
+          <li><b>SecureFolder.Tests</b>: 45 pruebas xUnit; accede a internals vía <code>InternalsVisibleTo</code>.</li>
+          <li>Sin archivo <code>.sln</code>: se compila el proyecto de App y arrastra al Core.</li>
+        </ul>
+        <span class="hint">Core es portable: mañana podría alimentar una CLI o un servicio sin tocar la UI.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 460 300" role="img" aria-label="Diagrama de arquitectura: App sobre Core, con Tests apuntando al Core">
+          <g font-family="Segoe UI,sans-serif">
+            <rect x="20" y="18" width="420" height="64" rx="12" fill="#16213e" stroke="#f0526d" stroke-width="2"/>
+            <text x="40" y="46" fill="#f0526d" font-size="17" font-weight="700">SecureFolder.App</text>
+            <text x="40" y="68" fill="#c3c7d4" font-size="13">WPF · .NET 10 · MVVM · ventana, tarjetas, overlays</text>
+            <path class="draw" d="M230 90 V124" stroke="#f0526d" stroke-width="3" fill="none"/>
+            <path class="draw" d="M222 116 L230 126 L238 116" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <rect x="20" y="132" width="420" height="64" rx="12" fill="#16213e" stroke="#4ade80" stroke-width="2"/>
+            <text x="40" y="160" fill="#4ade80" font-size="17" font-weight="700">SecureFolder.Core</text>
+            <text x="40" y="182" fill="#c3c7d4" font-size="13">cripto (AES-GCM / Argon2id) + filesystem .sfv</text>
+            <path class="draw" d="M230 204 V238" stroke="#8890b0" stroke-width="2.5" fill="none" stroke-dasharray="6 5"/>
+            <rect x="20" y="246" width="420" height="44" rx="12" fill="rgba(255,255,255,0.04)" stroke="#3a4166" stroke-width="2"/>
+            <text x="40" y="274" fill="#c3c7d4" font-size="15" font-weight="600">SecureFolder.Tests · 45 pruebas xUnit</text>
+            <text x="420" y="274" text-anchor="end" fill="#7f88ad" font-size="12">InternalsVisibleTo</text>
+          </g>
+        </svg>
+        <figcaption>Dependencias: App → Core ← Tests</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Insistir en la separación Core/UI: es lo que permitió correr 45 pruebas de cripto sin levantar WPF.</p>
+    </details>
+  </section>
+
+  <!-- 10 -->
+  <section class="step flip reveal" aria-labelledby="s10-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">10</span>
+      <h2 id="s10-h"><span class="sr">Paso 10: </span>El formato <span class="accent">.sfv</span> por dentro</h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Un solo archivo: header firmado, índice y chunks cifrados.</p>
+        <ul>
+          <li><b>Header</b>: magia + versión + salt + parámetros de Argon2id.</li>
+          <li><b>HMAC-SHA256</b> firma el header: si alguien lo altera, se rechaza el vault.</li>
+          <li><b>Índice</b>: mapa de archivos → rangos de chunks.</li>
+          <li><b>Chunks AES-256-GCM de 64&nbsp;KB</b>: lectura y escritura parciales sin descifrar todo.</li>
+        </ul>
+        <span class="hint">Los archivos de 0 bytes existen como entrada de índice: bug clásico que la suite cubre.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 460 210" role="img" aria-label="Esquema del formato .sfv: header, HMAC, índice y chunks de 64 KB">
+          <g font-family="Segoe UI,sans-serif">
+            <rect x="20" y="40" width="96" height="56" rx="8" fill="#f0526d"/>
+            <text x="68" y="66" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">Header</text>
+            <text x="68" y="84" text-anchor="middle" fill="#ffe3e8" font-size="11">salt · params</text>
+            <rect x="120" y="40" width="96" height="56" rx="8" fill="#4ade80"/>
+            <text x="168" y="66" text-anchor="middle" fill="#06281a" font-size="14" font-weight="700">HMAC</text>
+            <text x="168" y="84" text-anchor="middle" fill="#0b3d24" font-size="11">firma header</text>
+            <rect x="220" y="40" width="96" height="56" rx="8" fill="#c3c7d4"/>
+            <text x="268" y="66" text-anchor="middle" fill="#1a1a2e" font-size="14" font-weight="700">Índice</text>
+            <text x="268" y="84" text-anchor="middle" fill="#3a3f55" font-size="11">archivo → chunks</text>
+            <rect x="320" y="40" width="54" height="56" rx="8" fill="rgba(240,82,109,0.45)" stroke="#f0526d"/>
+            <text x="347" y="66" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Chunk</text>
+            <text x="347" y="84" text-anchor="middle" fill="#ffd9df" font-size="10">64 KB</text>
+            <rect x="378" y="40" width="54" height="56" rx="8" fill="rgba(240,82,109,0.45)" stroke="#f0526d"/>
+            <text x="405" y="66" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Chunk</text>
+            <text x="405" y="84" text-anchor="middle" fill="#ffd9df" font-size="10">64 KB</text>
+            <text x="440" y="74" fill="#8890b0" font-size="16">…</text>
+            <line x1="20" y1="118" x2="440" y2="118" stroke="#2a3150" stroke-dasharray="5 5"/>
+            <text x="20" y="146" fill="#c3c7d4" font-size="13">Lectura parcial:</text>
+            <text x="20" y="170" fill="#7f88ad" font-size="12">solo se descifran los 64 KB que pediste — no el vault entero.</text>
+            <rect x="20" y="184" width="150" height="18" rx="9" fill="rgba(240,82,109,0.2)"/>
+            <text x="95" y="197" text-anchor="middle" fill="#f0526d" font-size="11" font-weight="600">AES-256-GCM por chunk</text>
+          </g>
+        </svg>
+        <figcaption>Anatomía de un <code>.sfv</code></figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Mencionar que el HMAC del header es lo que detecta "vault manipulado" antes de confiar en cualquier parámetro.</p>
+    </details>
+  </section>
+
+  <!-- 11 -->
+  <section class="step reveal" aria-labelledby="s11-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">11</span>
+      <h2 id="s11-h"><span class="sr">Paso 11: </span>Cripto: <span class="accent">KEK y DEK</span>, sin atajos</h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Tu contraseña nunca toca los archivos; solo desbloquea la clave que los cifra.</p>
+        <ul>
+          <li>Contraseña + salt → <b>Argon2id</b> (64&nbsp;MB · 3 iteraciones · 4 hilos) → <b>KEK</b>.</li>
+          <li>La <b>DEK</b> (clave de datos) queda envuelta por la KEK dentro del vault.</li>
+          <li>Archivos → <b>AES-256-GCM</b> con la DEK: cifrado autenticado.</li>
+          <li>Cambiar contraseña = re-envolver la DEK: <b>cero re-cifrado</b> de datos.</li>
+        </ul>
+        <span class="hint">Argon2id es memoria-cara: cada intento de adivinar cuesta 64&nbsp;MB y tiempo de CPU.</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 460 300" role="img" aria-label="Flujo criptográfico: contraseña con Argon2id produce KEK que envuelve la DEK, y la DEK cifra archivos con AES-GCM">
+          <g font-family="Segoe UI,sans-serif">
+            <rect x="16" y="24" width="120" height="52" rx="10" fill="#16213e" stroke="#3a4166" stroke-width="2"/>
+            <text x="76" y="47" text-anchor="middle" fill="#eee" font-size="14" font-weight="700">Contraseña</text>
+            <text x="76" y="65" text-anchor="middle" fill="#8890b0" font-size="11">+ salt</text>
+            <path class="draw" d="M144 50 H188" stroke="#f0526d" stroke-width="3" fill="none"/>
+            <path class="draw" d="M180 42 L190 50 L180 58" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <text x="166" y="36" text-anchor="middle" fill="#f0526d" font-size="11" font-weight="600">Argon2id</text>
+            <rect x="196" y="24" width="112" height="52" rx="10" fill="rgba(240,82,109,0.15)" stroke="#f0526d" stroke-width="2"/>
+            <text x="252" y="47" text-anchor="middle" fill="#f0526d" font-size="15" font-weight="800">KEK</text>
+            <text x="252" y="65" text-anchor="middle" fill="#c3c7d4" font-size="11">clave maestra</text>
+            <path class="draw" d="M316 50 H360" stroke="#f0526d" stroke-width="3" fill="none"/>
+            <path class="draw" d="M352 42 L362 50 L352 58" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <text x="338" y="36" text-anchor="middle" fill="#f0526d" font-size="11" font-weight="600">envuelve</text>
+            <rect x="368" y="24" width="76" height="52" rx="10" fill="#16213e" stroke="#4ade80" stroke-width="2"/>
+            <text x="406" y="47" text-anchor="middle" fill="#4ade80" font-size="15" font-weight="800">DEK</text>
+            <text x="406" y="65" text-anchor="middle" fill="#c3c7d4" font-size="11">en vault</text>
+            <path class="draw" d="M406 84 V130" stroke="#4ade80" stroke-width="3" fill="none"/>
+            <path class="draw" d="M398 122 L406 132 L414 122" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <rect x="286" y="140" width="160" height="52" rx="10" fill="rgba(74,222,128,0.12)" stroke="#4ade80" stroke-width="2"/>
+            <text x="366" y="163" text-anchor="middle" fill="#4ade80" font-size="13" font-weight="700">AES-256-GCM</text>
+            <text x="366" y="181" text-anchor="middle" fill="#c3c7d4" font-size="11">cifra y autentica</text>
+            <path class="draw" d="M278 166 H180" stroke="#4ade80" stroke-width="3" fill="none"/>
+            <path class="draw" d="M188 158 L178 166 L188 174" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <rect x="16" y="140" width="156" height="52" rx="10" fill="#16213e" stroke="#3a4166" stroke-width="2"/>
+            <text x="94" y="163" text-anchor="middle" fill="#eee" font-size="14" font-weight="700">Tus archivos</text>
+            <text x="94" y="181" text-anchor="middle" fill="#8890b0" font-size="11">pdf · xlsx · txt …</text>
+            <path class="draw" d="M94 200 V236" stroke="#8890b0" stroke-width="2.5" fill="none" stroke-dasharray="6 5"/>
+            <rect x="16" y="244" width="428" height="44" rx="10" fill="#0f1424" stroke="#2a3150"/>
+            <text x="230" y="271" text-anchor="middle" fill="#c3c7d4" font-size="13">Todo termina en un solo archivo: <tspan fill="#f0526d" font-weight="700">vault.sfv</tspan></text>
+          </g>
+        </svg>
+        <figcaption>Flujo KEK → DEK → AES-256-GCM</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Frase clave: "la contraseña desbloquea la caja; no es la caja". Cambiar contraseña es instantáneo porque solo se re-envuelve la DEK.</p>
+    </details>
+  </section>
+
+  <!-- 12 -->
+  <section class="step flip reveal" aria-labelledby="s12-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">12</span>
+      <h2 id="s12-h"><span class="sr">Paso 12: </span>Unidad virtual con <span class="accent">WinFsp</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">El truco que hace que todo "se sienta normal".</p>
+        <ul>
+          <li>WinFsp instala un driver; la app publica y desmonta volúmenes.</li>
+          <li>Windows ve <b>Z:\</b> como un disco más — sin FUSE ni emuladores.</li>
+          <li>Enumeración estilo <b>memfs</b>: el cursor vive en el contexto de la operación, no se recalcula por llamada.</li>
+          <li>Patrón documentado en <code>docs/enumeracion.md</code>.</li>
+        </ul>
+        <span class="hint">WinFsp es por sesión de Windows: el montaje no sobrevive a cerrar la sesión (decisión de diseño, no bug).</span>
+      </div>
+      <figure class="fig a-item">
+        <svg viewBox="0 0 460 300" role="img" aria-label="Pila WinFsp: la app habla con la DLL, el driver y Windows muestra Z:">
+          <g font-family="Segoe UI,sans-serif">
+            <rect x="40" y="16" width="380" height="52" rx="10" fill="#16213e" stroke="#f0526d" stroke-width="2"/>
+            <text x="230" y="38" text-anchor="middle" fill="#f0526d" font-size="15" font-weight="700">SecureFolder.App</text>
+            <text x="230" y="57" text-anchor="middle" fill="#c3c7d4" font-size="12">read · write · enumerate · mount / unmount</text>
+            <path class="draw" d="M230 76 V104" stroke="#f0526d" stroke-width="3" fill="none"/>
+            <path class="draw" d="M222 96 L230 106 L238 96" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <rect x="40" y="114" width="380" height="52" rx="10" fill="#16213e" stroke="#3a4166" stroke-width="2"/>
+            <text x="230" y="136" text-anchor="middle" fill="#eee" font-size="15" font-weight="700">WinFsp (DLL de usuario)</text>
+            <text x="230" y="155" text-anchor="middle" fill="#c3c7d4" font-size="12">winfsp-*.dll · API de filesystems en user-mode</text>
+            <path class="draw" d="M230 174 V202" stroke="#8890b0" stroke-width="3" fill="none"/>
+            <path class="draw" d="M222 194 L230 204 L238 194" stroke="#8890b0" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <rect x="40" y="212" width="380" height="40" rx="10" fill="#0f1424" stroke="#2a3150" stroke-width="2"/>
+            <text x="230" y="237" text-anchor="middle" fill="#c3c7d4" font-size="13">Driver WinFsp (kernel) → FastFUSE / IOCTL</text>
+            <rect x="40" y="262" width="180" height="30" rx="15" fill="#f0526d"/>
+            <text x="130" y="282" text-anchor="middle" fill="#fff" font-size="13" font-weight="800">Windows ve Z:\</text>
+            <text x="420" y="282" text-anchor="end" fill="#7f88ad" font-size="12">Explorador · Office · cualquier app</text>
+          </g>
+        </svg>
+        <figcaption>Pila completa: de tu código al Explorador</figcaption>
+      </figure>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>WinFsp es software de código abierto maduro (registro HKLM). El instalador lo empaqueta: el usuario no lo instala a mano.</p>
+    </details>
+  </section>
+
+  <!-- 13 -->
+  <section class="step reveal" aria-labelledby="s13-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">13</span>
+      <h2 id="s13-h"><span class="sr">Paso 13: </span>Pruebas y los <span class="accent">bugs reales</span> del QA</h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Noventa por ciento del crédito está en los bugs que aparecieron al probar de verdad.</p>
+        <ul>
+          <li><b>Suite xUnit</b>: cripto, formato, filesystem — corre en cada build.</li>
+          <li><b>QA de UI con UIA</b> sobre la app instalada: clics físicos, no mocks.</li>
+          <li>Bugs corregidos: archivos de 0&nbsp;bytes, primer desbloqueo lento (&gt;12&nbsp;s), crash al eliminar, menú ⚙ con vault abierto, clic que no abría Explorer, enumeración colgada, botón Crear tapado.</li>
+        </ul>
+        <span class="hint">Lección: los scripts de QA van en ASCII puro (PowerShell 5.1 + acentos = misterios).</span>
+      </div>
+      <div class="a-item">
+        <div class="stats" role="group" aria-label="Métricas de calidad">
+          <div class="stat"><span class="count" data-to="45">45</span><span class="label">pruebas automatizadas pasando</span></div>
+          <div class="stat"><span class="count" data-to="7">7</span><span class="label">bugs reales encontrados y corregidos</span></div>
+          <div class="stat"><span class="count" data-to="100" data-suffix="%">100%</span><span class="label">local: sin nube ni telemetría</span></div>
+        </div>
+        <pre class="code"><code><span class="prompt">$</span> dotnet test src/SecureFolder.Tests/SecureFolder.Tests.csproj -c Release
+<span class="cmt"># 45/45 pruebas · cripto + formato + filesystem</span></code></pre>
+      </div>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Ejecutar dotnet test en vivo si hay tiempo (~segundos). Contar la historia del bug de 0 bytes: la suite lo reproduce en CI, la app instalada lo confirmó.</p>
+    </details>
+  </section>
+
+  <!-- 14 -->
+  <section class="step flip reveal" aria-labelledby="s14-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">14</span>
+      <h2 id="s14-h"><span class="sr">Paso 14: </span>Del código al <span class="accent">instalador</span></h2>
+    </div>
+    <div class="step-grid">
+      <div class="col a-item">
+        <p class="lead">Un solo script de build: publicar, empaquetar, instalar.</p>
+        <ul>
+          <li><code>build.ps1</code>: publish self-contained win-x64 → <code>release\app</code> (~141&nbsp;MB).</li>
+          <li><b>Inno Setup</b> compila <code>SecureFolderSetup.exe</code> (~45&nbsp;MB).</li>
+          <li>El instalador lleva adentro el <b>MSI de WinFsp</b> y lo instala en silencio.</li>
+          <li>Requiere admin una sola vez: en el instalador (UAC).</li>
+        </ul>
+        <span class="hint">Sin .NET en la máquina del usuario: el runtime viaja dentro de la app.</span>
+      </div>
+      <div class="a-item">
+        <figure class="fig">
+          <svg viewBox="0 0 460 150" role="img" aria-label="Pipeline de build: build.ps1, dotnet publish, Inno Setup y SecureFolderSetup.exe">
+            <g font-family="Segoe UI,sans-serif">
+              <rect x="8" y="40" width="100" height="60" rx="10" fill="#16213e" stroke="#f0526d" stroke-width="2"/>
+              <text x="58" y="66" text-anchor="middle" fill="#f0526d" font-size="14" font-weight="700">build.ps1</text>
+              <text x="58" y="86" text-anchor="middle" fill="#c3c7d4" font-size="11">un script</text>
+              <path class="draw" d="M114 70 H140" stroke="#f0526d" stroke-width="3" fill="none"/>
+              <path class="draw" d="M132 62 L142 70 L132 78" stroke="#f0526d" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <rect x="148" y="40" width="100" height="60" rx="10" fill="#16213e" stroke="#3a4166" stroke-width="2"/>
+              <text x="198" y="62" text-anchor="middle" fill="#eee" font-size="13" font-weight="700">publish</text>
+              <text x="198" y="82" text-anchor="middle" fill="#c3c7d4" font-size="11">self-contained</text>
+              <path class="draw" d="M254 70 H280" stroke="#8890b0" stroke-width="3" fill="none"/>
+              <path class="draw" d="M272 62 L282 70 L272 78" stroke="#8890b0" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <rect x="288" y="40" width="76" height="60" rx="10" fill="#16213e" stroke="#3a4166" stroke-width="2"/>
+              <text x="326" y="62" text-anchor="middle" fill="#eee" font-size="13" font-weight="700">Inno</text>
+              <text x="326" y="82" text-anchor="middle" fill="#c3c7d4" font-size="11">ISCC.exe</text>
+              <path class="draw" d="M370 70 H396" stroke="#8890b0" stroke-width="3" fill="none"/>
+              <path class="draw" d="M388 62 L398 70 L388 78" stroke="#8890b0" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <rect x="404" y="40" width="48" height="60" rx="10" fill="rgba(74,222,128,0.12)" stroke="#4ade80" stroke-width="2"/>
+              <text x="428" y="66" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">.exe</text>
+              <text x="428" y="86" text-anchor="middle" fill="#c3c7d4" font-size="10">setup</text>
+              <text x="8" y="132" fill="#7f88ad" font-size="12">→ release\app\…   ·   → release\SecureFolderSetup.exe (+ WinFsp MSI empaquetado)</text>
+            </g>
+          </svg>
+          <figcaption>Pipeline de distribución</figcaption>
+        </figure>
+        <pre class="code"><code><span class="prompt">$</span> .\build.ps1
+<span class="cmt"># → release\app\… y release\SecureFolderSetup.exe</span></code></pre>
+      </div>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Mostrar release\ si existe. El instalador silencioso (/VERYSILENT) fue la base del QA automatizado sobre app instalada.</p>
+    </details>
+  </section>
+
+  <!-- 15 · Cierre -->
+  <section class="step reveal" aria-labelledby="s15-h">
+    <div class="step-head a-item">
+      <span class="num" aria-hidden="true">15</span>
+      <h2 id="s15-h"><span class="sr">Paso 15: </span>Resultado y <span class="accent">qué aprendimos</span></h2>
+    </div>
+    <div class="a-item">
+      <div class="stats" role="group" aria-label="Resultado final">
+        <div class="stat"><span class="count" data-to="45" data-suffix="/45">45/45</span><span class="label">pruebas en verde</span></div>
+        <div class="stat"><span class="count" data-to="141" data-suffix=" MB">141 MB</span><span class="label">app self-contained</span></div>
+        <div class="stat"><span class="count" data-to="45" data-suffix=" MB">45 MB</span><span class="label">instalador único</span></div>
+        <div class="stat"><span class="count" data-to="0">0</span><span class="label">dependencias en runtime</span></div>
+      </div>
+      <div class="step-grid" style="margin-top:1.6rem">
+        <div class="col">
+          <p class="lead">Lecciones para llevarse:</p>
+          <ul>
+            <li>El QA sobre la <b>app instalada</b> (no solo unit tests) encontró la mitad de los bugs.</li>
+            <li>WinFsp es <b>por sesión</b>: el montaje no se hereda entre sesiones de Windows.</li>
+            <li>Separa Core de UI desde el inicio: las 45 pruebas corren sin levantar WPF.</li>
+            <li>Formato con <b>HMAC en el header</b> = detectar vaults manipulados antes de confiar.</li>
+          </ul>
+        </div>
+        <div class="col">
+          <p class="lead">Seguí explorando:</p>
+          <ul>
+            <li><b>Parte 1</b>: usá la app — crear, desbloquear, bloquear, eliminar.</li>
+            <li><b>Docs</b>: arquitectura, formato <code>.sfv</code> y enumeración WinFsp.</li>
+            <li><b>Pitch</b>: la versión proyectable de esta misma historia.</li>
+          </ul>
+          <div class="cta-row">
+            <a class="btn" href="https://github.com/FabianGallardo-coder/SecureFolder/releases/download/v1.0/SecureFolderSetup.exe">Descargar instalador .exe</a>
+            <a class="btn ghost" href="index.html">Ver el pitch →</a>
+            <a class="btn ghost" href="#parte1">Repetir la Parte 1</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <details class="notes a-item">
+      <summary>Notas para el presentador</summary>
+      <p>Cerrar con la demo en vivo: crear un vault, soltar un archivo en Z:, bloquear. Después, el botón de descarga del instalador (Release v1.0) y el link al pitch de 12 slides.</p>
+    </details>
+  </section>
+
+</main>
+
+<footer>
+  <p>SecureFolder · guía de la presentación — fuente: <code>pitch/guia-creacion.html</code></p>
+  <p><a href="index.html">Pitch (12 slides)</a> · <a href="#parte1">Parte 1</a> · <a href="#parte2">Parte 2</a></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+<script>
+(function () {
+  var doc = document.documentElement;
+  var bar = document.getElementById('bar');
+  function onScroll() {
+    var max = doc.scrollHeight - doc.clientHeight;
+    var p = max > 0 ? doc.scrollTop / max : 0;
+    if (bar) bar.style.transform = 'scaleX(' + p + ')';
+  }
+  document.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  onScroll();
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var canAnim = typeof anime !== 'undefined' && 'IntersectionObserver' in window && !reduce;
+  if (!canAnim) return;
+
+  doc.classList.add('anim-on');
+
+  function countUp(node) {
+    var to = parseInt(node.getAttribute('data-to'), 10) || 0;
+    var suffix = node.getAttribute('data-suffix') || '';
+    var obj = { v: 0 };
+    anime({
+      targets: obj, v: to, duration: 1500, easing: 'easeOutExpo',
+      update: function () { node.textContent = Math.round(obj.v) + suffix; }
+    });
+  }
+  function drawPath(p) {
+    try {
+      anime({ targets: p, strokeDashoffset: [anime.setDashoffset, 0], duration: 1100, easing: 'easeInOutSine' });
+    } catch (e) { /* path sin longitud util */ }
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var el = e.target;
+      io.unobserve(el);
+      var items = el.querySelectorAll('.a-item');
+      if (items.length) {
+        anime({
+          targets: items, opacity: [0, 1], translateY: [26, 0],
+          delay: anime.stagger(90), duration: 700, easing: 'easeOutCubic'
+        });
+      }
+      var counters = el.querySelectorAll('.count');
+      for (var i = 0; i < counters.length; i++) countUp(counters[i]);
+      var paths = el.querySelectorAll('.draw');
+      for (var j = 0; j < paths.length; j++) drawPath(paths[j]);
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
+
+  var sections = document.querySelectorAll('.reveal');
+  for (var k = 0; k < sections.length; k++) io.observe(sections[k]);
+})();
+</script>
+</body>
+</html>

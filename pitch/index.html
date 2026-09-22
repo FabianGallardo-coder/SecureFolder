@@ -10,7 +10,7 @@
   :root {
     --sf-bg: #1a1a2e;
     --sf-bg2: #16213e;
-    --sf-accent: #e94560;
+    --sf-accent: #f0526d;
     --sf-fg: #eee;
     --sf-muted: #888;
   }
@@ -42,7 +42,7 @@
   .card {
     flex: 1; max-width: 320px;
     background: rgba(255,255,255,0.045);
-    border: 1px solid rgba(233,69,96,0.35);
+    border: 1px solid rgba(240,82,109,0.35);
     border-radius: 12px; padding: 1em;
   }
   .card h3 { font-size: 0.62em; margin: 0 0 0.4em; color: var(--sf-accent); }
@@ -50,7 +50,7 @@
   .big { font-size: 2.6em; font-weight: 800; color: var(--sf-accent); line-height: 1; }
   .flow { display: flex; align-items: center; justify-content: center; gap: 0.6em; font-size: 0.62em; }
   .step {
-    background: rgba(233,69,96,0.12);
+    background: rgba(240,82,109,0.12);
     border: 1px solid var(--sf-accent);
     border-radius: 10px; padding: 0.7em 0.9em; min-width: 200px;
   }
@@ -58,10 +58,17 @@
   .arrow { color: var(--sf-accent); font-size: 1.2em; font-weight: 700; }
   .pill {
     display: inline-block; font-size: 0.5em; color: var(--sf-fg);
-    background: rgba(233,69,96,0.15); border: 1px solid rgba(233,69,96,0.5);
+    background: rgba(240,82,109,0.15); border: 1px solid rgba(240,82,109,0.5);
     border-radius: 999px; padding: 0.3em 0.9em; margin: 0 0.3em 0.3em 0;
+    text-decoration: none;
   }
+  a.pill:hover { filter: brightness(1.2); }
   .check { color: #4ade80; }
+  .grid2 {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1em; max-width: 940px; margin: 0.9em auto 0;
+  }
+  .grid2 .card { max-width: none; }
 </style>
 </head>
 <body>
@@ -86,10 +93,10 @@
   <section>
     <h2>Hoy, proteger archivos es <span class="accent">incómodo o insuficiente</span></h2>
     <ul>
-      <li>Cifrar a mano rompe el flujo: adiós a "esto lo hago después"</li>
-      <li>ZIP con contraseña: lento, centralizado y de descifrado manual</li>
-      <li>Discos cifrados completos: pesados y con riesgo de pérdida total</li>
-      <li>Resultado: la gente deja los datos sensibles <b>sin cifrar</b></li>
+      <li>Cifrar a mano rompe el flujo de trabajo</li>
+      <li>ZIP con contraseña: lento y manual</li>
+      <li>Discos completos: pesados y con pérdida total posible</li>
+      <li>Resultado: los datos sensibles quedan <b>sin cifrar</b></li>
     </ul>
     <aside class="notes">
       El problema no es la tecnología, es el hábito. Cifrar hoy significa cerrar el flujo de
@@ -135,13 +142,13 @@
 
   <!-- 5 · Seguridad -->
   <section>
-    <h2>Cifrado de grado militar, <span class="accent">sin atajos</span></h2>
-    <ul>
-      <li><b>AES-256-GCM</b> por archivo: autenticado y a prueba de manipulación</li>
-      <li><b>Argon2id</b> (64&nbsp;MB · 3 iteraciones · 4 hilos): resistente a fuerza bruta</li>
-      <li><b>Claves KEK/DEK</b>: tu contraseña nunca se guarda ni se sube a la nube</li>
-      <li><b>HMAC-SHA256</b> en el encabezado: detecta cualquier alteración</li>
-    </ul>
+    <h2>Estándares modernos, <span class="accent">cero inventos propios</span></h2>
+    <div class="grid2">
+      <div class="card"><h3>AES-256-GCM</h3><p>Cifra y autentica cada archivo: detecta manipulación.</p></div>
+      <div class="card"><h3>Argon2id</h3><p>64&nbsp;MB · 3 iteraciones · 4 hilos: fuerza bruta cara.</p></div>
+      <div class="card"><h3>Claves KEK/DEK</h3><p>La contraseña nunca se guarda ni sale de tu equipo.</p></div>
+      <div class="card"><h3>HMAC-SHA256</h3><p>Firma el encabezado y detecta cualquier alteración.</p></div>
+    </div>
     <aside class="notes">
       Estándares modernos, sin inventos propios. AES-256-GCM no solo cifra, autentica: si alguien
       modifica un archivo, se detecta. Argon2id es el KDF ganador del password-hashing competition:
@@ -173,11 +180,11 @@
   <section>
     <h2>Se siente como una carpeta normal</h2>
     <ul>
-      <li>Funciona con Explorer, Office, editores: <b>cualquier app</b> usa Z:</li>
-      <li>Sin duplicados ni re-cifrados manuales: todo en el momento</li>
+      <li>Cualquier app usa Z: Explorer, Office, editores</li>
+      <li>Sin duplicados ni re-cifrados manuales</li>
       <li>Auto-bloqueo por tiempo y <b>bloqueo con un clic</b></li>
-      <li>Cambiá la contraseña cuando quieras — <b>sin volver a cifrar tus datos</b></li>
-      <li>Vive en la bandeja: seguro en segundo plano mientras trabajás</li>
+      <li>Cambiá la contraseña <b>sin re-cifrar nunca</b> los datos</li>
+      <li>Vive en la bandeja sin estorbar</li>
     </ul>
     <aside class="notes">
       La propuesta de valor es que no haya propuesta: no tiene que aprender nada. Abren Z:, guardan,
@@ -194,7 +201,7 @@
       <div class="card"><div class="big">1</div><h3>archivo instalable</h3><p>Self-contained: incluye todo, sin dependencias.</p></div>
       <div class="card"><div class="big">100%</div><h3>local</h3><p>Sin nube, sin cuenta, sin backdoors.</p></div>
     </div>
-    <p class="muted" style="margin-top:0.8em">Cliente nativo Windows (.NET) · ciclo de vida completo del vault: crear, abrir, bloquear, renombrar, cambiar contraseña, eliminar</p>
+    <p class="muted" style="margin-top:0.8em">Cliente nativo .NET · ciclo completo: crear, bloquear, renombrar, cambiar clave, eliminar</p>
     <aside class="notes">
       Esto no es un mockup: es producto funcionando. 45 pruebas automatizadas sobre cifrado y
       sistema de archivos, instalador que incluye todo (el motor de unidades virtuales, WinFsp),
@@ -206,7 +213,7 @@
 
   <!-- 9 · Casos de uso -->
   <section>
-    <h2>Dónde duele hoy, y donde encaja</h2>
+    <h2>Tres perfiles con datos <span class="accent">sin cifrar hoy</span></h2>
     <div class="row">
       <div class="card"><h3>Freelancers &amp; pymes</h3><p>Contratos, facturas, datos de clientes.</p></div>
       <div class="card"><h3>Salud y derecho</h3><p>Expedientes e información bajo obligaciones de confidencialidad.</p></div>
@@ -222,10 +229,10 @@
 
   <!-- 10 · Roadmap -->
   <section>
-    <h2>Roadmap propuesto</h2>
+    <h2>Lo próximo: <span class="accent">vaults compartidos y portátiles</span></h2>
     <ul>
       <li><b>Vaults compartidos</b> para equipos, con permisos por invitación</li>
-      <li><b>Vaults portátiles</b> en USB, exportación y registro de auditoría</li>
+      <li><b>Vaults portátiles</b> en USB, con auditoría</li>
       <li>Protección de carpetas de <b>sincronización</b> (OneDrive, Dropbox)</li>
       <li>Despliegue y <b>onboarding</b> para empresas</li>
     </ul>
@@ -240,7 +247,7 @@
 
   <!-- 11 · Modelo de negocio -->
   <section>
-    <h2>Modelo propuesto</h2>
+    <h2>Gratis para empezar, <span class="accent">se paga al escalar</span></h2>
     <div class="row">
       <div class="card"><h3>Personal · Gratis</h3><p>Vaults ilimitados en tu equipo.</p></div>
       <div class="card"><h3>Pro · Licencia</h3><p>Portabilidad USB, auto-bloqueo avanzado, soporte.</p></div>
@@ -259,12 +266,13 @@
     <h1>Probalo en esta demo</h1>
     <p class="lead" style="margin-top:0.6em">Un vault abierto, archivos usándose y todo cerrado desde el icono de la bandeja.</p>
     <p style="margin-top:1.2em">
-      <span class="pill">Demo en vivo</span><span class="pill">Acceso anticipado</span><span class="pill">charla@securefolder</span>
+      <a class="pill" href="https://github.com/FabianGallardo-coder/SecureFolder/releases/download/v1.0/SecureFolderSetup.exe">Descargar instalador .exe</a><span class="pill">Demo en vivo</span><span class="pill">Acceso anticipado</span><span class="pill">charla@securefolder</span>
     </p>
     <aside class="notes">
       Gracias por llegar hasta acá. La forma más honesta de cerrar es mostrar: abramos Z:, veamos
       los archivos funcionando, y cerremos el vault para que vean que en disco queda todo cifrado.
-      Listo para preguntas; y si querés acceso anticipado, te dejo el contacto.
+      El botón de la píldora baja el instalador desde GitHub Releases (v1.0). Listo para preguntas;
+      y si querés acceso anticipado, te dejo el contacto.
     </aside>
   </section>
 
