@@ -73,8 +73,8 @@ Este documento describe el plan de pruebas ejecutado para validar la estabilidad
 - Persistencia de archivos de **0 bytes** tras bloquear/desbloquear — PASS.
 - Desbloqueo + abrir carpeta desde el binario publicado, app NO elevada — PASS.
 
-**Todavía pendiente (requiere UAC + sesión interactiva):**
-- Instalar el `release\SecureFolderSetup.exe` regenerado (2026-09-21 17:10) y repetir el ciclo completo sobre la app **instalada**.
+**Hecho luego (2026-09-22, ver sección 7):** instalado el setup regenerado y repetido el ciclo
+completo sobre la app **instalada** (no elevada, sesión interactiva).
 
 ## 6. Ciclo QA UI (menú ⚙) y code review (2026-09-21)
 
@@ -106,3 +106,35 @@ Este documento describe el plan de pruebas ejecutado para validar la estabilidad
 | `release\app\SecureFolder.Core.dll` | 0,06 MB | 2026-09-21 17:09 | `3E54E2EE878A4FCBEE659EFA59AD8A9FD72D017C96B259B89CB76497E6B4D90D` |
 | `release\SecureFolderSetup.exe` | 45,5 MB | 2026-09-21 17:10 | `3B65EA2F73920C03C9EAECB0C7A34B0E25A01EC42A6BD8BAB9A32274E6E5B62B` |
 | `installer\vendor\winfsp-2.2.26215.msi` | 2,11 MB | 2026-09-17 10:34 | `2ECB5C89405488A95BBD8A01875E02C48534FD37BBDFD84488F7590464D65944` |
+
+## 7. QA E2E sobre la app INSTALADA (2026-09-22)
+
+**Instalación**: `release\SecureFolderSetup.exe` (17:10) instalado con `/VERYSILENT` desde shell
+elevado → **exit 0**; WinFsp ya presente (`HKLM\SOFTWARE\WOW6432Node\WinFsp`). App en
+`C:\Program Files\SecureFolder\SecureFolder.App.exe`.
+
+**Metodología**: la app se lanzó **no elevada** (integridad media) dentro de la sesión interactiva
+(sesión 3). Nota: el montaje WinFsp es **por-sesión**; el shell elevado usado para QA corre en otra
+sesión, por lo que el ciclo se ejecutó vía tarea programada `schtasks /rl LIMITED` (mismo usuario).
+Verificación de elevación por **token** (`OpenProcessToken`+`TokenElevation`, esperado `False`).
+
+**Ciclo completo (repetido 3× sobre la app instalada NO elevada) — PASS:**
+- Crear vault (`InstQA*`) y desbloquear → `Z:` montado (el status textual confirma: "La unidad
+  `Z:\` ya está disponible").
+- Write + read-back en `Z:` → contenido íntegro (regresión read-after-write).
+- Archivo de **0 bytes** creado y persistente tras bloquear/re-desbloquear (regresión Bug #1).
+- `explorer` se abre desde el vault desbloqueado con la app **no elevada** (1 ventana CabinetWClass)
+  — sin el banner/guard de elevación (regresión app-elevada/unidad-invisible).
+- Bloquear → `Z:` desmontado.
+- Re-desbloquear → `Z:` vuelve y **persiste >15 s** (regresión del override `Mounted`, >12 s).
+- 2.º vault + desbloqueo en paralelo → ambos presentan estado correcto.
+
+**Notas de limitation del harness**: la automatización UIA vía tarea programada resultó
+**intermitente** (flaps de `Get-CardByName`/`Gear` durante refrescos de la lista con varias tarjetas),
+por lo que "Bloquear todas" (efecto) y "Eliminar por UI" sobre la **app instalada** quedan como
+**verificación manual/visual pendiente** — su lógica ya está cubierta en el binario `release\app`
+(`delete-e2e.ps1` PASS, sección 6) y el botón "Bloquear todas" está presente en la UI instalada
+(probe UIA). No se considera un bug de la app: el ciclo completo pasó 3 veces.
+
+**Limpieza**: vaults `InstQA*`/`BlkQA*` de QA eliminados de `%LOCALAPPDATA%\SecureFolder\vaults.json`
+(quedó `TestE2E`) y sus `.sfv` eliminados de `Documents\SecureFolders`.

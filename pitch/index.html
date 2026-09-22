@@ -271,13 +271,72 @@
 </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
 <script>
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function animateSlide(slide) {
+    if (reducedMotion || typeof anime === 'undefined' || !slide) return;
+    const scope = slide;
+
+    anime.set(scope.querySelectorAll('h1, h2'), { opacity: 1, translateY: 0 });
+    const heading = scope.querySelector('h1, h2');
+    if (heading) {
+      anime({ targets: heading, opacity: [0, 1], translateY: [24, 0], duration: 600, easing: 'easeOutCubic' });
+    }
+
+    const items = scope.querySelectorAll('.card, .step, .flow > .arrow, ul li, table tbody tr, .pill, p.lead');
+    if (items.length) {
+      anime({
+        targets: items,
+        opacity: [0, 1],
+        translateY: [28, 0],
+        delay: anime.stagger(110, { start: 260 }),
+        duration: 620,
+        easing: 'easeOutQuad'
+      });
+    }
+  }
+
+  function animateCounters(slide) {
+    if (reducedMotion || typeof anime === 'undefined' || !slide) return;
+    slide.querySelectorAll('.big').forEach(function (el) {
+      const text = el.textContent.replace(/\s+/g, ' ').trim();
+      const m = text.match(/^([\d.,]+)(.*)$/);
+      if (!m) return;
+      const raw = m[1];
+      const target = parseFloat(raw.replace(/\./g, '').replace(',', '.'));
+      const suffix = m[2];
+      const isInt = /^[\d]+$/.test(raw);
+      const state = { v: 0 };
+      anime({
+        targets: state,
+        v: target,
+        round: isInt ? 1 : 10,
+        duration: 1100,
+        easing: 'easeOutCubic',
+        update: function () {
+          el.textContent = (isInt ? Math.round(state.v) : state.v.toFixed(1)) + suffix;
+        }
+      });
+    });
+  }
+
   Reveal.initialize({
     hash: true,
     slideNumber: true,
     transition: 'slide',
     width: 1280,
     height: 720
+  });
+
+  Reveal.on('ready', function () {
+    animateSlide(Reveal.getCurrentSlide());
+    animateCounters(Reveal.getCurrentSlide());
+  });
+  Reveal.on('slidechanged', function (e) {
+    animateSlide(e.currentSlide);
+    animateCounters(e.currentSlide);
   });
 </script>
 </body>

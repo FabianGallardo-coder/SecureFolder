@@ -21,11 +21,17 @@ siguientes ciclos de trabajo.
    dev **PASS** (`e2e-full.ps1`, 2026-09-21). Ver [first-unlock-flaky](./first-unlock-flaky.md).
 
 ### Verificación pendiente
-3. **QA E2E sobre la app instalada** — el binario publicado (`release\app`) ya se verificó NO elevado
-   el 2026-09-21 (desbloqueo + `Explorer Z:\`). Falta el repro físico del **instalador**
-   `release\SecureFolderSetup.exe` en máquina con escritorio (requiere UAC + UI interactiva).
+3. **QA E2E sobre la app instalada** — **HECHO (parcial, 2026-09-22)**: instalado el setup 17:10 y
+   repetido el ciclo completo sobre la app **instalada NO elevada** (sesión interactiva vía
+   `schtasks /rl LIMITED`): crear → desbloquear `Z:` → read-back → 0 bytes → bloquear/desbloquear →
+   persistencia >15 s `Z:` — **PASS 3/3**. Ver `docs/qa-report.md` §7. **Ojo QA**: el montaje
+   WinFsp es **por-sesión** y el shell elevado corre en otra sesión (la automatización se hace por
+   tarea programada a integridad media). Pendiente solo verificación manual/visual de "Bloquear
+   todas" (efecto) y "Eliminar" por UI en instalada: el harness UIA bajo tarea programada fue
+   intermitente (flaps de `Get-CardByName`/`Gear`); la lógica ya está cubierta en `release\app`
+   (`delete-e2e.ps1` PASS).
 4. **"Bloquear todas"** — `CountToVisibleConverter` arreglado; verificar visualmente con vars
-   vaults al mismo tiempo en el build final.
+   vaults al mismo tiempo en el build final (pendiente, ver nota en el ítem 3).
 5. ~~**Regenerar artefactos Release con el fix de `RemoveVault`**~~ — **HECHO** el 2026-09-21 17:09–
    17:10 (`build.ps1`): `release\app` 141,2 MB + `release\SecureFolderSetup.exe` 45,5 MB. Hashes
    actualizados en `docs/qa-report.md` (sección 6).
