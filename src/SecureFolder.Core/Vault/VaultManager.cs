@@ -70,6 +70,54 @@ public sealed class VaultManager : IDisposable
     }
 
     /// <summary>
+    /// Agrega a la lista una carpeta segura .sfv ya existente (p. ej. en un USB o en
+    /// otra PC): valida el formato y la registra en su ubicación actual, sin copiarla.
+    /// La desbloqueo es el flujo habitual, con la contraseña del vault.
+    /// </summary>
+    public async Task<Result<VaultInfo>> ImportVaultAsync(
+        string vaultFilePath,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(vaultFilePath) || !File.Exists(vaultFilePath))
+                return Result<VaultInfo>.Fail("No se encontró el archivo de la carpeta segura.");
+
+            if (!string.Equals(Path.GetExtension(vaultFilePath), ".sfv", StringComparison.OrdinalIgnoreCase))
+                return Result<VaultInfo>.Fail("El archivo debe tener extensión .sfv.");
+
+            vaultFilePath = Path.GetFullPath(vaultFilePath);
+
+            // Validar cabecera e índice sin contraseña (el chequeo criptográfico
+            // completo ocurre al desbloquear).
+            await VaultFormat.ValidateVaultAsync(vaultFilePath, ct);
+
+            if (_vaults.Any(v => string.Equals(v.VaultFilePath, vaultFilePath, StringComparison.OrdinalIgnoreCase)))
+                return Result<VaultInfo>.Fail("Esta carpeta segura ya está en la lista.");
+
+            var info = new VaultInfo
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Name = Path.GetFileNameWithoutExtension(vaultFilePath),
+                VaultFilePath = vaultFilePath
+            };
+
+            _vaults.Add(info);
+            SaveVaultList();
+
+            return Result<VaultInfo>.Ok(info);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<VaultInfo>.Fail(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Result<VaultInfo>.Fail($"No se pudo abrir la carpeta segura: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Unlocks a vault with the given password and mounts it as a virtual drive.
     /// </summary>
     public async Task<Result<MountedVault>> UnlockVaultAsync(

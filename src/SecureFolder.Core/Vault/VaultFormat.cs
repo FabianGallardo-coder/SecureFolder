@@ -121,6 +121,39 @@ byte[] emptyIndex = Encoding.UTF8.GetBytes("{}");
     }
 
     /// <summary>
+    /// Valida que un archivo sea una carpeta segura .sfv legible (magic, versión e
+    /// índice) sin necesitar la contraseña. Sirve para importar vaults existentes
+    /// —p. ej. desde un USB— a la lista local.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">El archivo no es un .sfv válido o está dañado.</exception>
+    public static async Task ValidateVaultAsync(string vaultFilePath, CancellationToken ct = default)
+    {
+        await using var fs = new FileStream(vaultFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
+
+        // Header completo + los 4 bytes de longitud del índice
+        if (fs.Length < HeaderSize + 4)
+            throw new InvalidOperationException("El archivo de la carpeta segura es demasiado pequeño o está dañado.");
+
+        byte[] header = new byte[HeaderSize];
+        await fs.ReadExactlyAsync(header, ct);
+
+        string magic = Encoding.ASCII.GetString(header, 0, MagicSize);
+        if (magic != Magic)
+            throw new InvalidOperationException("Formato de archivo de carpeta segura no válido.");
+
+        ushort version = BitConverter.ToUInt16(header, MagicSize);
+        if (version > CurrentVersion)
+            throw new InvalidOperationException($"Versión de carpeta segura no compatible: {version}");
+
+        // El índice cifrado debe caber dentro del archivo (detecta archivos truncados)
+        byte[] indexLengthBytes = new byte[4];
+        await fs.ReadExactlyAsync(indexLengthBytes, ct);
+        int indexLength = BitConverter.ToInt32(indexLengthBytes);
+        if (indexLength <= 0 || HeaderSize + 4L + indexLength > fs.Length)
+            throw new InvalidOperationException("El archivo de la carpeta segura está dañado.");
+    }
+
+    /// <summary>
     /// Opens and verifies a vault file, returning the DEK and metadata.
     /// </summary>
     public static async Task<VaultOpenResult> OpenVaultAsync(

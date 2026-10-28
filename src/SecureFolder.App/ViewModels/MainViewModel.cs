@@ -172,6 +172,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Abre un .sfv existente (USB, otra PC, descarga) y lo agrega a la lista local.
+    /// </summary>
+    [RelayCommand]
+    private async Task ImportVaultAsync()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Abrir carpeta segura existente",
+            Filter = "Carpetas seguras (*.sfv)|*.sfv",
+            CheckFileExists = true
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        StatusMessage = "Agregando carpeta segura...";
+
+        var result = await _vaultManager.ImportVaultAsync(dialog.FileName);
+
+        if (result.IsSuccess)
+        {
+            RefreshVaultList();
+            StatusMessage = $"Carpeta segura '{result.Value!.Name}' agregada. Desbloqueala con su contraseña.";
+        }
+        else
+        {
+            StatusMessage = result.Error ?? "No se pudo abrir la carpeta segura.";
+        }
+    }
+
     [RelayCommand]
     private void ShowUnlockDialog(VaultInfo vault)
     {

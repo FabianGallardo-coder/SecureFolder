@@ -45,9 +45,11 @@ dotnet test
 ## Uso
 
 1. **Crear vault**: hacer clic en "+ Crear carpeta segura", elegir nombre, ubicación y contraseña
-2. **Desbloquear**: hacer clic en "Desbloquear" e ingresar la contraseña — se monta como unidad virtual
-3. **Usar**: copiar/crear archivos normalmente en la unidad montada
-4. **Bloquear**: hacer clic en "Bloquear" — los datos se cifran y la unidad se desmonta
+2. **Abrir uno existente** (USB o de otra PC): hacer clic en "Abrir existente…", elegir el
+   archivo `.sfv` — se agrega a la lista sin copiarlo y se desbloquea con su contraseña
+3. **Desbloquear**: hacer clic en "Desbloquear" e ingresar la contraseña — se monta como unidad virtual
+4. **Usar**: copiar/crear archivos normalmente en la unidad montada
+5. **Bloquear**: hacer clic en "Bloquear" — los datos se cifran y la unidad se desmonta
 
 > ⚠ Si olvidás la contraseña, los datos cifrados pueden ser irrecuperables.
 
