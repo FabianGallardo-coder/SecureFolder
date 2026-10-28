@@ -9,14 +9,16 @@
 - **Default branch = `master`** (antes `Master`, que apuntaba al Initial commit `21e9c88` y hacía
   que el repo se viera "vacío/viejo" al abrirlo). La rama `Master` fue **borrada** del remoto.
 - **PR #1** (`master` → `Master`): se autocerró al borrar la base.
-- **Release `v1.0`** publicado con asset `SecureFolderSetup.exe` (47 662 945 bytes ≈ 45,5 MB),
-  `--latest`. URL de descarga que usan los CTA:
+- **Release `v1.1` (latest)** publicado con asset `SecureFolderSetup.exe` (47 669 859 bytes),
+  que agrega la función «Abrir existente…» (importar `.sfv` de USB/otra PC). Release anterior
+  `v1.0` (47 662 945 bytes) sigue disponible. URL de descarga que usan los CTA:
 
-  `https://github.com/FabianGallardo-coder/SecureFolder/releases/download/v1.0/SecureFolderSetup.exe`
+  `https://github.com/FabianGallardo-coder/SecureFolder/releases/download/v1.1/SecureFolderSetup.exe`
 
   Verificada con GET anónimo → **HTTP 206**.
-- CTA insertados en `pitch/index.html` (S12, `a.pill`) y `pitch/guia-creacion.html` (S15, `.cta-row`).
-- Commit: `2b2598f docs(pitch): refina pitch, añade guía paso a paso y CTA de descarga`.
+- CTA insertados en `pitch/index.html` (S12, `a.pill`) y `pitch/guia-creacion.html` (S15, `.cta-row`);
+  ambos apuntan a **v1.1** (commit `0803e9f`).
+- Commits: `413cdeb feat(vault): importar vault .sfv existente` y `0803e9f docs(pitch): CTA v1.1`.
 
 ## Gotchas aprendidas
 
@@ -35,6 +37,10 @@
    `gh release view` devuelve el **node id** (`RA_…`) → 404 engañoso. Usar `gh release download`
    para probar assets.
 5. Subir el `.exe` al repo está descartado (45 MB + binario); assets de Release es el mecanismo.
+6. **ISCC falla con error 110 (`EndUpdateResource failed`)** la primera vez que corre: es el
+   antivirus/Defender inspeccionando el `Setup.exe` recién escrito. **Reintentar ISCC** en
+   caliente funciona al segundo intento (el publish de `release\app` ya está listo, no hace
+   falta re-ejecutar `build.ps1` entero — solo `ISCC.exe installer\SecureFolder.iss`).
 
 ## Relanzar un release
 
