@@ -131,9 +131,9 @@
   .step h2 { margin: 0; font-size: clamp(1.3rem, 1.05rem + 1.4vw, 1.85rem); line-height: 1.2; }
   .accent { color: var(--sf-accent); }
 
-  .step-grid { display: grid; grid-template-columns: 1fr; gap: clamp(1.2rem, 3vw, 2rem); margin-top: 1.4rem; }
+  .step-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(1.2rem, 3vw, 2rem); margin-top: 1.4rem; }
   @media (min-width: 860px) {
-    .step-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    .step-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
     .step.flip .fig { order: -1; }
   }
   .col .lead { margin: 0 0 .8rem; color: #d7dae4; font-weight: 600; }
@@ -149,6 +149,7 @@
   .fig {
     margin: 0; background: var(--sf-card); border: 1px solid var(--sf-line);
     border-radius: 16px; padding: clamp(.7rem, 2vw, 1rem); overflow: hidden;
+    min-width: 0;
   }
   .fig svg { display: block; width: 100%; height: auto; }
   .fig figcaption {
